@@ -25,6 +25,17 @@ def seed_second_translation(path: Path) -> None:
     Store(path).save_translation("alt", data)
 
 
+def seed_markdown_sensitive_translation(path: Path) -> None:
+    data = tiny_translation()
+    data["metadata"] = {
+        **data["metadata"],
+        "id": "md",
+        "name": "# Heading | Translation",
+    }
+    data["books"][1]["chapters"][0]["verses"][0]["text"] = "Fixture loved line.\n- accidental list | table"
+    Store(path).save_translation("md", data)
+
+
 def test_cli_query_json_outputs_machine_readable_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
 
@@ -95,3 +106,33 @@ def test_cli_compare_text_prints_translation_labels(tmp_path: Path, capsys: pyte
         "[alt] Alternate Fixture Translation",
         "John 3:16 Alternate loved line.",
     ]
+
+
+def test_cli_compare_markdown_exports_readable_sections(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    seed_markdown_sensitive_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "md", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16",
+        "",
+        "## toy — Toy Test Translation",
+        "",
+        "- **John 3:16** Fixture loved line.",
+        "",
+        "## md — \\# Heading \\| Translation",
+        "",
+        "- **John 3:16** Fixture loved line. \\- accidental list \\| table",
+    ]
+
+
+def test_cli_compare_rejects_json_and_markdown_together(tmp_path: Path) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--json", "--markdown"])
+
+    assert exc_info.value.code == 2

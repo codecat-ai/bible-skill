@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
-from bible_skill.query import QueryError, query_passage
+from bible_skill.query import PassageResult, QueryError, query_passage
 from bible_skill.skill_template import render_skill
 from bible_skill.store import Store
 
@@ -57,7 +57,9 @@ def build_parser() -> argparse.ArgumentParser:
     compare = subparsers.add_parser("compare", parents=[common], help="Compare a passage across local translations.")
     compare.add_argument("reference")
     compare.add_argument("translation_ids", nargs="+", help="Two or more installed translation IDs to compare.")
-    compare.add_argument("--json", action="store_true")
+    compare_output = compare.add_mutually_exclusive_group()
+    compare_output.add_argument("--json", action="store_true")
+    compare_output.add_argument("--markdown", action="store_true")
     compare.set_defaults(func=_compare)
 
     live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
@@ -139,6 +141,8 @@ def _compare(args: argparse.Namespace) -> int:
                 ],
             }
         )
+    elif args.markdown:
+        print(_render_compare_markdown(reference, results))
     else:
         print(reference)
         for result in results:
@@ -177,6 +181,29 @@ def _filter_translations(rows: list[dict[str, Any]], query: str | None, language
         lang = language.casefold()
         filtered = [row for row in filtered if str(row.get("language", "")).casefold() == lang]
     return filtered
+
+
+def _render_compare_markdown(reference: str, results: Sequence[PassageResult]) -> str:
+    lines = [f"# {_markdown_text(reference)}"]
+    for result in results:
+        lines.extend(
+            [
+                "",
+                f"## {_markdown_text(result.translation_id)} — {_markdown_text(result.translation_name)}",
+                "",
+            ]
+        )
+        for verse in result.verses:
+            lines.append(f"- **{_markdown_text(verse.reference)}** {_markdown_text(verse.text)}")
+    return "\n".join(lines)
+
+
+def _markdown_text(value: str) -> str:
+    text = " ".join(str(value).split())
+    escaped = text.replace("\\", "\\\\")
+    for char in ("`", "*", "_", "[", "]", "#", "|", "<", ">"):
+        escaped = escaped.replace(char, f"\\{char}")
+    return escaped.replace("- ", "\\- ")
 
 
 def _print_json(payload: Any) -> None:

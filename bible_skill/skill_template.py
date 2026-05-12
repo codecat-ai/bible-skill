@@ -14,6 +14,8 @@ def render_skill(data_dir: str) -> str:
         f"- Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir}`",
         "- Compare an exact passage across local translations: "
         f"`bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir {data_dir}`",
+        "- Export a comparison as Markdown for notes or agent context: "
+        f"`bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir {data_dir} --markdown`",
         "- List downloadable translations: `bible-skill translations`",
         f"- Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir {data_dir}`",
         '- Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`',
