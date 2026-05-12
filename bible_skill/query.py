@@ -33,6 +33,21 @@ class PassageResult:
         }
 
 
+def render_usfm(passage: PassageResult) -> str:
+    lines = [
+        rf"\id {_usfm_text(passage.translation_id)}",
+        rf"\h {_usfm_text(passage.translation_name)}",
+    ]
+    current_chapter: int | None = None
+    for verse in passage.verses:
+        chapter, verse_number = _reference_chapter_verse(verse.reference)
+        if chapter != current_chapter:
+            lines.append(rf"\c {chapter}")
+            current_chapter = chapter
+        lines.append(rf"\v {verse_number} {_usfm_text(verse.text)}")
+    return "\n".join(lines)
+
+
 def query_passage(translation: dict[str, Any], raw_reference: str) -> PassageResult:
     try:
         reference = parse_reference(raw_reference)
@@ -205,3 +220,13 @@ def _format_range(book: Book, selected: list[tuple[int, int, str]]) -> str:
     if start_chapter == end_chapter:
         return f"{book.name} {start_chapter}:{start_verse}-{end_verse}"
     return f"{book.name} {start_chapter}:{start_verse}-{end_chapter}:{end_verse}"
+
+
+def _reference_chapter_verse(reference: str) -> tuple[int, int]:
+    location = reference.rsplit(" ", maxsplit=1)[-1]
+    chapter, verse = location.split(":", maxsplit=1)
+    return int(chapter), int(verse)
+
+
+def _usfm_text(value: str) -> str:
+    return " ".join(str(value).replace("\\", "/").split())
