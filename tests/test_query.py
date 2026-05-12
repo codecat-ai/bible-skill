@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from bible_skill.query import QueryError, query_passage
+from bible_skill.query import QueryError, query_passage, render_usfm
 from tests.fixtures import tiny_translation
 
 
@@ -71,6 +71,34 @@ def test_query_normalizes_free_use_bible_api_chapter_content_shape() -> None:
 
     assert result.translation_id == "shape"
     assert result.verses[0].text == "Fixture API line."
+
+
+def test_render_usfm_exports_cross_chapter_passage() -> None:
+    result = query_passage(tiny_translation(), "John 3:18-4:1")
+
+    assert render_usfm(result) == "\n".join(
+        [
+            r"\id toy",
+            r"\h Toy Test Translation",
+            r"\c 3",
+            r"\v 18 Fixture believed line.",
+            r"\c 4",
+            r"\v 1 Fixture travel line.",
+        ]
+    )
+
+
+def test_render_usfm_normalizes_unsafe_verse_text() -> None:
+    translation = tiny_translation()
+    translation["books"][1]["chapters"][0]["verses"][0]["text"] = "  First\\id bad\n\n   second\t\\v marker   text.  "
+    result = query_passage(translation, "John 3:16")
+
+    assert render_usfm(result).splitlines() == [
+        r"\id toy",
+        r"\h Toy Test Translation",
+        r"\c 3",
+        r"\v 16 First/id bad second /v marker text.",
+    ]
 
 
 def test_query_reports_out_of_range() -> None:

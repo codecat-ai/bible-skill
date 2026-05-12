@@ -10,6 +10,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "bible-skill installed --data-dir ./example-data" in text
     assert "bible-skill search QUERY --data-dir ./example-data" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data" in text
+    assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data --usfm" in text
     assert (
         "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --markdown" in text
     )

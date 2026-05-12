@@ -50,6 +50,31 @@ def test_cli_query_json_outputs_machine_readable_passage(tmp_path: Path, capsys:
     assert payload["verses"] == [{"reference": "John 3:16", "text": "Fixture loved line."}]
 
 
+def test_cli_query_usfm_outputs_minimal_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:18-4:1", "--usfm"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        r"\id toy",
+        r"\h Toy Test Translation",
+        r"\c 3",
+        r"\v 18 Fixture believed line.",
+        r"\c 4",
+        r"\v 1 Fixture travel line.",
+    ]
+
+
+def test_cli_query_rejects_json_and_usfm_together(tmp_path: Path) -> None:
+    seed_translation(tmp_path)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--json", "--usfm"])
+
+    assert exc_info.value.code == 2
+
+
 def test_cli_reports_missing_translation_friendly(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["--data-dir", str(tmp_path), "query", "missing", "John 3:16"])
 

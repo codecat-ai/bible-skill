@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
-from bible_skill.query import PassageResult, QueryError, query_passage
+from bible_skill.query import PassageResult, QueryError, query_passage, render_usfm
 from bible_skill.search import search_installed
 from bible_skill.skill_template import render_skill
 from bible_skill.store import Store
@@ -57,7 +57,9 @@ def build_parser() -> argparse.ArgumentParser:
     query = subparsers.add_parser("query", parents=[common], help="Query a local translation.")
     query.add_argument("translation_id")
     query.add_argument("reference")
-    query.add_argument("--json", action="store_true")
+    query_output = query.add_mutually_exclusive_group()
+    query_output.add_argument("--json", action="store_true")
+    query_output.add_argument("--usfm", action="store_true", help="Output minimal USFM-like text.")
     query.set_defaults(func=_query)
 
     compare = subparsers.add_parser("compare", parents=[common], help="Compare a passage across local translations.")
@@ -127,6 +129,8 @@ def _query(args: argparse.Namespace) -> int:
     result = query_passage(translation, args.reference)
     if args.json:
         _print_json(result.to_dict())
+    elif args.usfm:
+        print(render_usfm(result))
     else:
         print(f"{result.translation_id} {result.normalized_reference}")
         for verse in result.verses:
