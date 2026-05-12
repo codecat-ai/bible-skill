@@ -8,6 +8,7 @@ from typing import Any
 
 from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
 from bible_skill.query import PassageResult, QueryError, query_passage
+from bible_skill.search import search_installed
 from bible_skill.skill_template import render_skill
 from bible_skill.store import Store
 
@@ -47,6 +48,11 @@ def build_parser() -> argparse.ArgumentParser:
     installed = subparsers.add_parser("installed", parents=[common], help="List installed translations.")
     installed.add_argument("--json", action="store_true")
     installed.set_defaults(func=_installed)
+
+    search = subparsers.add_parser("search", parents=[common], help="Search installed translation metadata.")
+    search.add_argument("query")
+    search.add_argument("--json", action="store_true")
+    search.set_defaults(func=_search)
 
     query = subparsers.add_parser("query", parents=[common], help="Query a local translation.")
     query.add_argument("translation_id")
@@ -103,6 +109,16 @@ def _installed(args: argparse.Namespace) -> int:
                 f"{row['translation_id']}\t{row['name']}\t"
                 f"{row['book_count']} books\t{row['chapter_count']} chapters\t{row['verse_count']} verses"
             )
+    return 0
+
+
+def _search(args: argparse.Namespace) -> int:
+    rows = [record.to_dict() for record in search_installed(Store(args.data_dir).installed(), args.query)]
+    if args.json:
+        _print_json(rows)
+    else:
+        for row in rows:
+            print(f"{row['translation_id']}\t{row['name']}\t{row['language']}\t{row['verse_count']} verses")
     return 0
 
 

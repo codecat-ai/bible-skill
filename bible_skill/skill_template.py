@@ -11,6 +11,7 @@ def render_skill(data_dir: str) -> str:
         "## Commands",
         "",
         f"- List installed translations: `bible-skill installed --data-dir {data_dir}`",
+        f"- Search installed translation metadata: `bible-skill search QUERY --data-dir {data_dir}`",
         f"- Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir}`",
         "- Compare an exact passage across local translations: "
         f"`bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir {data_dir}`",

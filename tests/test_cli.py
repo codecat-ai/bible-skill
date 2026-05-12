@@ -20,6 +20,8 @@ def seed_second_translation(path: Path) -> None:
         **data["metadata"],
         "id": "alt",
         "name": "Alternate Fixture Translation",
+        "language": "de",
+        "source_url": "https://mirror.example.invalid/alternate.json",
     }
     data["books"][1]["chapters"][0]["verses"][0]["text"] = "Alternate loved line."
     Store(path).save_translation("alt", data)
@@ -63,6 +65,37 @@ def test_cli_installed_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
 
     assert code == 0
     assert json.loads(capsys.readouterr().out)[0]["translation_id"] == "toy"
+
+
+def test_cli_search_text_outputs_local_metadata_matches(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "search", "mirror.example"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "alt\tAlternate Fixture Translation\tde\t8 verses",
+    ]
+
+
+def test_cli_search_json_outputs_local_metadata_matches(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "search", "fixture", "--json"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert [row["translation_id"] for row in payload] == ["alt"]
+    assert payload[0]["source_url"] == "https://mirror.example.invalid/alternate.json"
+
+
+def test_cli_search_rejects_blank_query(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["--data-dir", str(tmp_path), "search", "  "])
+
+    assert code == 2
+    assert "Search query cannot be blank" in capsys.readouterr().err
 
 
 def test_cli_compare_json_aligns_multiple_local_translations(
