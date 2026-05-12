@@ -1,0 +1,149 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections.abc import Sequence
+from typing import Any
+
+from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
+from bible_skill.query import QueryError, query_passage
+from bible_skill.skill_template import render_skill
+from bible_skill.store import Store
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        return args.func(args)
+    except FileNotFoundError as exc:
+        print(f"Missing local translation: {exc}", file=sys.stderr)
+        return 2
+    except (QueryError, ProviderError, OSError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        return 2
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="bible-skill")
+    parser.add_argument("--data-dir", help="Directory for downloaded translation data.")
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--data-dir", default=argparse.SUPPRESS, help="Directory for downloaded translation data.")
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    translations = subparsers.add_parser("translations", parents=[common], help="List available translations.")
+    translations.add_argument("--query", help="Filter by id or name.")
+    translations.add_argument("--language", help="Filter by language.")
+    translations.add_argument("--json", action="store_true", help="Output JSON.")
+    translations.set_defaults(func=_translations)
+
+    download = subparsers.add_parser("download", parents=[common], help="Download a complete translation.")
+    download.add_argument("translation_id")
+    download.add_argument("--force", action="store_true")
+    download.add_argument("--json", action="store_true")
+    download.set_defaults(func=_download)
+
+    installed = subparsers.add_parser("installed", parents=[common], help="List installed translations.")
+    installed.add_argument("--json", action="store_true")
+    installed.set_defaults(func=_installed)
+
+    query = subparsers.add_parser("query", parents=[common], help="Query a local translation.")
+    query.add_argument("translation_id")
+    query.add_argument("reference")
+    query.add_argument("--json", action="store_true")
+    query.set_defaults(func=_query)
+
+    live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
+    live.add_argument("reference")
+    live.add_argument("--translation", default="web")
+    live.add_argument("--json", action="store_true")
+    live.set_defaults(func=_live)
+
+    skill = subparsers.add_parser("skill", parents=[common], help="Print a Hermes-compatible SKILL.md.")
+    skill.set_defaults(func=_skill)
+    return parser
+
+
+def _translations(args: argparse.Namespace) -> int:
+    rows = FreeUseBibleApiClient().translations()
+    rows = _filter_translations(rows, args.query, args.language)
+    if args.json:
+        _print_json(rows)
+    else:
+        for row in rows:
+            print(f"{row.get('id', '')}\t{row.get('name', '')}\t{row.get('language', '')}")
+    return 0
+
+
+def _download(args: argparse.Namespace) -> int:
+    record = Store(args.data_dir).download(args.translation_id, FreeUseBibleApiClient(), force=args.force)
+    if args.json:
+        _print_json(record.to_dict())
+    else:
+        print(f"{record.translation_id}\t{record.name}\t{record.book_count} books\t{record.verse_count} verses")
+    return 0
+
+
+def _installed(args: argparse.Namespace) -> int:
+    rows = [record.to_dict() for record in Store(args.data_dir).installed()]
+    if args.json:
+        _print_json(rows)
+    else:
+        for row in rows:
+            print(
+                f"{row['translation_id']}\t{row['name']}\t"
+                f"{row['book_count']} books\t{row['chapter_count']} chapters\t{row['verse_count']} verses"
+            )
+    return 0
+
+
+def _query(args: argparse.Namespace) -> int:
+    translation = Store(args.data_dir).load_translation(args.translation_id)
+    result = query_passage(translation, args.reference)
+    if args.json:
+        _print_json(result.to_dict())
+    else:
+        print(f"{result.translation_id} {result.normalized_reference}")
+        for verse in result.verses:
+            print(f"{verse.reference} {verse.text}")
+    return 0
+
+
+def _live(args: argparse.Namespace) -> int:
+    payload = BibleApiClient().passage(args.reference, args.translation)
+    if args.json:
+        _print_json(payload)
+    else:
+        print(payload.get("reference", args.reference))
+        print(payload.get("text", "").strip())
+    return 0
+
+
+def _skill(args: argparse.Namespace) -> int:
+    store = Store(args.data_dir)
+    print(render_skill(str(store.data_dir)))
+    return 0
+
+
+def _filter_translations(rows: list[dict[str, Any]], query: str | None, language: str | None) -> list[dict[str, Any]]:
+    filtered = rows
+    if query:
+        needle = query.casefold()
+        filtered = [
+            row
+            for row in filtered
+            if needle in str(row.get("id", "")).casefold() or needle in str(row.get("name", "")).casefold()
+        ]
+    if language:
+        lang = language.casefold()
+        filtered = [row for row in filtered if str(row.get("language", "")).casefold() == lang]
+    return filtered
+
+
+def _print_json(payload: Any) -> None:
+    print(json.dumps(payload, indent=2, ensure_ascii=False))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
