@@ -16,6 +16,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Download complete translations into a local data directory.
 - List installed translations with book, chapter, and verse counts.
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
+- Compare the same local passage across two or more installed translations in text or JSON.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
@@ -46,6 +47,7 @@ bible-skill download web --data-dir ./data
 bible-skill installed --data-dir ./data
 bible-skill query web "John 3:16" --data-dir ./data
 bible-skill query web "JHN 3:16-4:2" --data-dir ./data --json
+bible-skill compare "John 3:16" web kjv --data-dir ./data --json
 bible-skill live "John 3:16" --translation web
 bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 ```
@@ -63,7 +65,7 @@ Local queries accept:
 
 ## Configuration
 
-Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, and license URL when the provider supplies it.
+Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, and license URL when the provider supplies it. The `compare` command reads only installed local translations, so download each translation before comparing it.
 
 ## Data and licensing
 
@@ -84,12 +86,12 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local passage lookup, Free Use Bible API response normalization, provider endpoints, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local passage lookup and comparison, Free Use Bible API response normalization, provider endpoints, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
 - Support more provider data shapes and USFM exports.
-- Add side-by-side multi-translation comparison.
+- Add export formats for comparison reports.
 - Prepare a packaged release after manual registry verification.
 
 ## Contributing

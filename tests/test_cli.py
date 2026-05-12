@@ -14,6 +14,17 @@ def seed_translation(path: Path) -> None:
     Store(path).save_translation("toy", tiny_translation())
 
 
+def seed_second_translation(path: Path) -> None:
+    data = tiny_translation()
+    data["metadata"] = {
+        **data["metadata"],
+        "id": "alt",
+        "name": "Alternate Fixture Translation",
+    }
+    data["books"][1]["chapters"][0]["verses"][0]["text"] = "Alternate loved line."
+    Store(path).save_translation("alt", data)
+
+
 def test_cli_query_json_outputs_machine_readable_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
 
@@ -41,3 +52,46 @@ def test_cli_installed_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
 
     assert code == 0
     assert json.loads(capsys.readouterr().out)[0]["translation_id"] == "toy"
+
+
+def test_cli_compare_json_aligns_multiple_local_translations(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--json"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "reference": "John 3:16",
+        "translations": [
+            {
+                "translation_id": "toy",
+                "translation_name": "Toy Test Translation",
+                "verses": [{"reference": "John 3:16", "text": "Fixture loved line."}],
+            },
+            {
+                "translation_id": "alt",
+                "translation_name": "Alternate Fixture Translation",
+                "verses": [{"reference": "John 3:16", "text": "Alternate loved line."}],
+            },
+        ],
+    }
+
+
+def test_cli_compare_text_prints_translation_labels(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "John 3:16",
+        "[toy] Toy Test Translation",
+        "John 3:16 Fixture loved line.",
+        "[alt] Alternate Fixture Translation",
+        "John 3:16 Alternate loved line.",
+    ]

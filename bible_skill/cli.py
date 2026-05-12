@@ -54,6 +54,12 @@ def build_parser() -> argparse.ArgumentParser:
     query.add_argument("--json", action="store_true")
     query.set_defaults(func=_query)
 
+    compare = subparsers.add_parser("compare", parents=[common], help="Compare a passage across local translations.")
+    compare.add_argument("reference")
+    compare.add_argument("translation_ids", nargs="+", help="Two or more installed translation IDs to compare.")
+    compare.add_argument("--json", action="store_true")
+    compare.set_defaults(func=_compare)
+
     live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
     live.add_argument("reference")
     live.add_argument("--translation", default="web")
@@ -107,6 +113,38 @@ def _query(args: argparse.Namespace) -> int:
         print(f"{result.translation_id} {result.normalized_reference}")
         for verse in result.verses:
             print(f"{verse.reference} {verse.text}")
+    return 0
+
+
+def _compare(args: argparse.Namespace) -> int:
+    if len(args.translation_ids) < 2:
+        raise QueryError("Compare requires at least two translation IDs.")
+
+    store = Store(args.data_dir)
+    results = [
+        query_passage(store.load_translation(translation_id), args.reference) for translation_id in args.translation_ids
+    ]
+    reference = results[0].normalized_reference
+    if args.json:
+        _print_json(
+            {
+                "reference": reference,
+                "translations": [
+                    {
+                        "translation_id": result.translation_id,
+                        "translation_name": result.translation_name,
+                        "verses": [verse.__dict__ for verse in result.verses],
+                    }
+                    for result in results
+                ],
+            }
+        )
+    else:
+        print(reference)
+        for result in results:
+            print(f"[{result.translation_id}] {result.translation_name}")
+            for verse in result.verses:
+                print(f"{verse.reference} {verse.text}")
     return 0
 
 
