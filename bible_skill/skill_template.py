@@ -11,6 +11,7 @@ def render_skill(data_dir: str) -> str:
         "## Commands",
         "",
         f"- List installed translations: `bible-skill installed --data-dir {data_dir}`",
+        f"- Validate installed translation cache files: `bible-skill validate --data-dir {data_dir}`",
         f"- Search installed translation metadata: `bible-skill search QUERY --data-dir {data_dir}`",
         f"- Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir}`",
         "- Export an exact local passage as minimal USFM-like text: "
@@ -38,6 +39,8 @@ def render_skill(data_dir: str) -> str:
         "",
         "Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact "
         "wording from the tool output. Respect translation metadata and license URLs.",
+        "Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local translations in automated "
+        "workflows; use `--json` when callers need machine-readable issue lists.",
         "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "
         "wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, "
         "`content`, `verse_text`, or nested mixed fragments.",

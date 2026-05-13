@@ -96,6 +96,77 @@ def test_cli_installed_json(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     assert json.loads(capsys.readouterr().out)[0]["translation_id"] == "toy"
 
 
+def test_cli_validate_text_reports_cache_status(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "validate", "toy"])
+
+    assert code == 0
+    output = capsys.readouterr().out.strip()
+    assert output.startswith("toy\tok\tsha256:")
+
+
+def test_cli_validate_json_reports_issue_lists(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    path = tmp_path / "translations" / "toy" / "translation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["metadata"]["checksum"] = "sha256:" + ("0" * 64)
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "validate", "toy", "missing", "--json"])
+
+    assert code == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == [
+        {
+            "translation_id": "toy",
+            "ok": False,
+            "checksum": Store(tmp_path).translation_checksum(data),
+            "issues": ["metadata.checksum does not match translation content"],
+        },
+        {
+            "translation_id": "missing",
+            "ok": False,
+            "checksum": "",
+            "issues": ["translation cache is missing"],
+        },
+    ]
+
+
+def test_cli_validate_without_ids_checks_installed_translations(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "validate"])
+
+    assert code == 0
+    assert [line.split("\t")[:2] for line in capsys.readouterr().out.splitlines()] == [
+        ["alt", "ok"],
+        ["toy", "ok"],
+    ]
+
+
+def test_cli_validate_without_ids_reports_broken_cache_file(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    path = tmp_path / "translations" / "broken"
+    path.mkdir(parents=True)
+    (path / "translation.json").write_text("{", encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "validate", "--json"])
+
+    assert code == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == [
+        {
+            "translation_id": "broken",
+            "ok": False,
+            "checksum": "",
+            "issues": ["translation.json is invalid JSON: Expecting property name enclosed in double quotes"],
+        }
+    ]
+
+
 def test_cli_search_text_outputs_local_metadata_matches(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
     seed_second_translation(tmp_path)
