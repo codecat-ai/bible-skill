@@ -14,6 +14,7 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 - Extract references from notes or sermons: `bible-skill extract --text "See John 3:16 and Romans 8:28-30"`
 - Extract references from a local Markdown file as JSON: `bible-skill extract --file notes.md --json`
 - Export extracted references from a local Markdown file as Markdown: `bible-skill extract --file notes.md --markdown`
+- Export extracted references from a local Markdown file as CSV: `bible-skill extract --file notes.md --csv`
 - List downloadable translations: `bible-skill translations`
 - Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir ./data`
 - Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`

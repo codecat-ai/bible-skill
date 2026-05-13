@@ -61,6 +61,7 @@ bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30."
 bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30." --markdown
 bible-skill extract --file sermon-notes.md --json
 bible-skill extract --file sermon-notes.md --markdown
+bible-skill extract --file sermon-notes.md --csv
 bible-skill live "John 3:16" --translation web
 bible-skill live "John 3:16" --translation web --markdown
 bible-skill live "John 3:16" --translation web --csv
@@ -80,7 +81,7 @@ bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 
 ## 引用提取
 
-在查询或对比经文前，可以用 `bible-skill extract` 扫描笔记、讲章或 Markdown。`--text TEXT` 和 `--file PATH` 互斥，且必须提供其中一个。文本输出会按首次出现顺序，每行打印一个去重后的规范化引用。`--json` 会输出多行对象，包含匹配文本、规范化引用、字符偏移、书卷 ID/名称，以及起止章节和经文字段。`--markdown` 会输出以 `# Extracted Bible references` 开头、适合笔记粘贴的摘要；有匹配时，每条使用加粗的规范化引用和已转义的来源上下文，没有匹配时输出 `No Bible references found.`。`--json` 与 `--markdown` 互斥。
+在查询或对比经文前，可以用 `bible-skill extract` 扫描笔记、讲章或 Markdown。`--text TEXT` 和 `--file PATH` 互斥，且必须提供其中一个。文本输出会按首次出现顺序，每行打印一个去重后的规范化引用。`--json` 会输出多行对象，包含匹配文本、规范化引用、字符偏移、书卷 ID/名称，以及起止章节和经文字段。`--markdown` 会输出以 `# Extracted Bible references` 开头、适合笔记粘贴的摘要；有匹配时，每条使用加粗的规范化引用和已转义的来源上下文，没有匹配时输出 `No Bible references found.`。`--csv` 会输出适合电子表格的行，列为 `reference`、`book`、`chapter`、`start_verse`、`end_verse`、`start`、`end` 和 `context`；没有匹配时只打印标题行。`--json`、`--markdown` 与 `--csv` 互斥。
 
 纯 Python API 可通过 `bible_skill.extract.extract_references(text)` 使用，适合 Agent 和应用工作流。提取功能识别与 `parse_reference` 相同的书卷名称、别名和 USFM ID，包括 `John 3:16`、`JHN 3:16-4:2`、`Genesis 1` 和 `Romans 8:28-30` 等形式。
 

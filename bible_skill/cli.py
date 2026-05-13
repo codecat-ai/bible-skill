@@ -94,6 +94,7 @@ def build_parser() -> argparse.ArgumentParser:
     extract_output = extract.add_mutually_exclusive_group()
     extract_output.add_argument("--json", action="store_true", help="Output JSON.")
     extract_output.add_argument("--markdown", action="store_true", help="Output a note-friendly Markdown summary.")
+    extract_output.add_argument("--csv", action="store_true", help="Output spreadsheet-friendly CSV rows.")
     extract.set_defaults(func=_extract)
     return parser
 
@@ -225,6 +226,8 @@ def _extract(args: argparse.Namespace) -> int:
         _print_json([row.to_dict() for row in rows])
     elif args.markdown:
         print(_render_extract_markdown(text, rows))
+    elif args.csv:
+        sys.stdout.write(_render_extract_csv(text, rows))
     else:
         for row in rows:
             print(row.normalized_reference)
@@ -296,6 +299,26 @@ def _extract_source_context(text: str, start: int, end: int) -> str:
     if line_end == -1:
         line_end = len(text)
     return text[line_start:line_end].strip()
+
+
+def _render_extract_csv(text: str, rows: Sequence[ExtractedReference]) -> str:
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["reference", "book", "chapter", "start_verse", "end_verse", "start", "end", "context"])
+    for row in rows:
+        writer.writerow(
+            [
+                row.normalized_reference,
+                row.book_name,
+                row.start_chapter,
+                row.start_verse or "",
+                row.end_verse or "",
+                row.start,
+                row.end,
+                _extract_source_context(text, row.start, row.end),
+            ]
+        )
+    return output.getvalue()
 
 
 def _render_live_csv(payload: dict[str, Any], requested_reference: str) -> str:
