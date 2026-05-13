@@ -21,7 +21,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Extract Bible references from arbitrary notes, sermons, or Markdown using the same local parser and book data.
 - Export local query results as minimal deterministic USFM-like text.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
-- Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output.
+- Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output and configurable timeout/retry settings.
 - Report live provider HTTP failures with useful provider messages, compact body excerpts, and `Retry-After` backoff hints when available.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
@@ -66,6 +66,7 @@ bible-skill extract --file sermon-notes.md --json
 bible-skill extract --file sermon-notes.md --markdown
 bible-skill extract --file sermon-notes.md --csv
 bible-skill live "John 3:16" --translation web
+bible-skill live "John 3:16" --translation web --timeout 10 --retries 2
 bible-skill live "John 3:16" --translation web --markdown
 bible-skill live "John 3:16" --translation web --csv
 bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
@@ -92,7 +93,7 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, license URL when the provider supplies it, and a deterministic `sha256:` checksum calculated from normalized translation content without the fetched timestamp. The `validate` command checks installed cache files before agents rely on them; pass optional translation IDs to validate only those caches, or omit IDs to validate every installed translation. Text output is tab-separated and concise, while `--json` emits objects with `translation_id`, `ok`, `checksum`, and `issues`. Validation exits non-zero if any requested cache is missing or invalid. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
-The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
+The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Use `--timeout SECONDS` to change the provider request timeout from the default 30 seconds, and `--retries COUNT` to retry transient network errors or transient HTTP responses such as 408, 429, and 5xx responses. The default retry count is 0, so existing single-attempt behavior is preserved unless retries are requested. Semantic provider responses such as 404/no passage found are not retried. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
 
 ## Data and licensing
 
@@ -113,11 +114,10 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum validation, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints and error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum validation, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior and error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
-- Add configurable live-provider timeout and retry settings for automation environments.
 - Prepare a packaged release after manual registry verification.
 
 ## Contributing

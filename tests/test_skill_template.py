@@ -21,6 +21,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "bible-skill extract --file notes.md --markdown" in text
     assert "bible-skill extract --file notes.md --csv" in text
     assert "bible-skill download TRANSLATION_ID --data-dir ./example-data" in text
+    assert 'bible-skill live "John 3:16" --translation web --timeout 10 --retries 2' in text
     assert 'bible-skill live "John 3:16" --translation web --markdown' in text
     assert 'bible-skill live "John 3:16" --translation web --csv' in text
     assert "Live `--json` output is raw provider JSON." in text
@@ -28,3 +29,4 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "use `--json` when callers need machine-readable issue lists" in text
     assert "top-level `data` object" in text
     assert "`content`, `verse_text`, or nested mixed fragments" in text
+    assert "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls" in text

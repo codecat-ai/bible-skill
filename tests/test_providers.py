@@ -2,12 +2,28 @@ from __future__ import annotations
 
 from email.message import Message
 from io import BytesIO
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 import pytest
 
 from bible_skill import providers
-from bible_skill.providers import FreeUseBibleApiClient, ProviderError
+from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
+
+
+class JsonResponse:
+    def __init__(self, body: str = '{"ok": true}') -> None:
+        self.headers = Message()
+        self.headers["Content-Type"] = "application/json; charset=utf-8"
+        self._body = body.encode("utf-8")
+
+    def __enter__(self) -> JsonResponse:
+        return self
+
+    def __exit__(self, *args: object) -> None:
+        return None
+
+    def read(self) -> bytes:
+        return self._body
 
 
 def test_free_use_download_uses_documented_complete_endpoint(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -25,6 +41,104 @@ def test_free_use_download_uses_documented_complete_endpoint(monkeypatch: pytest
     assert seen_urls == ["https://bible.helloao.org/api/BSB/complete.json"]
     assert payload["metadata"]["id"] == "BSB"
     assert payload["metadata"]["source_url"] == seen_urls[0]
+
+
+def test_get_json_passes_configured_timeout_to_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen_timeouts: list[float] = []
+
+    def fake_urlopen(*args: object, **kwargs: object) -> JsonResponse:
+        seen_timeouts.append(kwargs["timeout"])
+        return JsonResponse()
+
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+
+    providers._get_json("https://provider.example.invalid/passage", timeout=7.5)
+
+    assert seen_timeouts == [7.5]
+
+
+def test_bible_api_passage_passes_timeout_and_retries_to_request(monkeypatch: pytest.MonkeyPatch) -> None:
+    seen_options: list[tuple[float, int]] = []
+
+    def fake_get_json(url: str, *, timeout: float = 30, retries: int = 0) -> dict[str, object]:
+        seen_options.append((timeout, retries))
+        return {"reference": "John 3:16", "text": "Example text."}
+
+    monkeypatch.setattr(providers, "_get_json", fake_get_json)
+
+    BibleApiClient("https://bible-api.example.invalid").passage("John 3:16", timeout=4, retries=2)
+
+    assert seen_options == [(4, 2)]
+
+
+def test_get_json_retries_transient_network_failure_then_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
+    attempts = 0
+
+    def fake_urlopen(*args: object, **kwargs: object) -> JsonResponse:
+        nonlocal attempts
+        attempts += 1
+        if attempts == 1:
+            raise URLError("temporary DNS failure")
+        return JsonResponse('{"reference": "John 3:16"}')
+
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+
+    payload = providers._get_json("https://provider.example.invalid/passage", retries=1)
+
+    assert attempts == 2
+    assert payload == {"reference": "John 3:16"}
+
+
+def test_get_json_retry_exhaustion_preserves_provider_error_details(monkeypatch: pytest.MonkeyPatch) -> None:
+    attempts = 0
+
+    def fake_urlopen(*args: object, **kwargs: object) -> object:
+        nonlocal attempts
+        attempts += 1
+        response_headers = Message()
+        response_headers["Content-Type"] = "application/json"
+        response_headers["Retry-After"] = "90"
+        raise HTTPError(
+            "https://provider.example.invalid/passage",
+            503,
+            "provider error",
+            response_headers,
+            BytesIO(b'{"detail": "Provider maintenance window is active."}'),
+        )
+
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+
+    with pytest.raises(ProviderError) as exc_info:
+        providers._get_json("https://provider.example.invalid/passage", retries=1)
+
+    message = str(exc_info.value)
+    assert attempts == 2
+    assert "HTTP 503 while fetching https://provider.example.invalid/passage" in message
+    assert "Provider maintenance window is active." in message
+    assert "Retry after 90" in message
+
+
+def test_get_json_does_not_retry_non_retryable_http_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    attempts = 0
+
+    def fake_urlopen(*args: object, **kwargs: object) -> object:
+        nonlocal attempts
+        attempts += 1
+        raise HTTPError(
+            "https://provider.example.invalid/passage",
+            404,
+            "not found",
+            Message(),
+            BytesIO(b'{"error": "No passage found."}'),
+        )
+
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+
+    with pytest.raises(ProviderError) as exc_info:
+        providers._get_json("https://provider.example.invalid/passage", retries=3)
+
+    assert attempts == 1
+    assert "No passage found." in str(exc_info.value)
 
 
 def raise_http_error(
