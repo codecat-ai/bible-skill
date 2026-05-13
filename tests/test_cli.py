@@ -432,6 +432,69 @@ def test_cli_live_markdown_exports_top_level_text_when_no_verses(
     ]
 
 
+def test_cli_live_markdown_renders_data_wrapped_passages_with_nested_fragments(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+        return {
+            "data": {
+                "reference": "John 3:16-17",
+                "translation": "WEB",
+                "passages": [
+                    {
+                        "reference": "John 3:16",
+                        "content": [
+                            "For God",
+                            {"text": "so loved"},
+                            ["the world", {"content": "that he gave"}],
+                        ],
+                    },
+                    {
+                        "reference": "John 3:17",
+                        "verse_text": [
+                            {"content": "For God did not send"},
+                            ["his Son", {"text": "to condemn"}],
+                        ],
+                    },
+                ],
+            }
+        }
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16-17", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16-17",
+        "",
+        "- **John 3:16** For God so loved the world that he gave",
+        "- **John 3:17** For God did not send his Son to condemn",
+    ]
+
+
+def test_cli_live_json_outputs_raw_provider_payload_for_data_wrapped_shape(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    provider_payload = {
+        "data": {
+            "reference": "John 3:16",
+            "translation": "WEB",
+            "verses": [{"reference": "John 3:16", "content": ["For God", {"text": "loved"}]}],
+        }
+    }
+
+    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+        return provider_payload
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--json"])
+
+    assert code == 0
+    assert json.loads(capsys.readouterr().out) == provider_payload
+
+
 def test_render_live_csv_exports_one_row_per_usable_verse() -> None:
     output = _render_live_csv(
         {
@@ -465,6 +528,38 @@ def test_render_live_csv_exports_top_level_text_when_no_usable_verses() -> None:
     assert list(csv.reader(io.StringIO(output))) == [
         ["reference", "translation", "verse_reference", "text"],
         ["John 3:16", "web", "John 3:16", "Top-level, fallback text."],
+    ]
+
+
+def test_render_live_csv_renders_data_wrapped_verses_with_alternate_text_keys() -> None:
+    output = _render_live_csv(
+        {
+            "data": {
+                "reference": "John 3:16-17",
+                "translation": "WEB",
+                "verses": [
+                    {
+                        "book_name": "John",
+                        "chapter": 3,
+                        "verse": 16,
+                        "content": ["For God", {"text": "so loved"}, ["the world"]],
+                    },
+                    {
+                        "book": "John",
+                        "chapter": 3,
+                        "verse": 17,
+                        "verse_text": [{"content": "For God sent"}, ["his Son"]],
+                    },
+                ],
+            }
+        },
+        "John 3:16-17",
+    )
+
+    assert list(csv.reader(io.StringIO(output))) == [
+        ["reference", "translation", "verse_reference", "text"],
+        ["John 3:16-17", "WEB", "John 3:16", "For God so loved the world"],
+        ["John 3:16-17", "WEB", "John 3:17", "For God sent his Son"],
     ]
 
 
