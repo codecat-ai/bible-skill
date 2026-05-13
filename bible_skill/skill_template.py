@@ -37,6 +37,9 @@ def render_skill(data_dir: str) -> str:
         "",
         "Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact "
         "wording from the tool output. Respect translation metadata and license URLs.",
+        "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "
+        "wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, "
+        "`content`, `verse_text`, or nested mixed fragments.",
         "",
     ]
     return "\n".join(lines)

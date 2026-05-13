@@ -262,17 +262,16 @@ def _render_compare_markdown(reference: str, results: Sequence[PassageResult]) -
 
 
 def _render_live_markdown(payload: dict[str, Any], requested_reference: str) -> str:
-    reference = str(payload.get("reference") or requested_reference)
+    body = _live_payload_body(payload)
+    reference = str(body.get("reference") or requested_reference)
     lines = [f"# {_markdown_text(reference)}", ""]
-    verses = payload.get("verses")
-    if isinstance(verses, list) and verses:
+    verses = _live_usable_verses(body)
+    if verses:
         for verse in verses:
-            if not isinstance(verse, dict):
-                continue
             verse_reference = _live_verse_reference(verse)
-            lines.append(f"- **{_markdown_text(verse_reference)}** {_markdown_text(str(verse.get('text', '')))}")
+            lines.append(f"- **{_markdown_text(verse_reference)}** {_markdown_text(_live_text(verse))}")
     else:
-        lines.append(f"- **{_markdown_text(reference)}** {_markdown_text(str(payload.get('text', '')))}")
+        lines.append(f"- **{_markdown_text(reference)}** {_markdown_text(_live_text(body))}")
     return "\n".join(lines)
 
 
@@ -300,20 +299,30 @@ def _extract_source_context(text: str, start: int, end: int) -> str:
 
 
 def _render_live_csv(payload: dict[str, Any], requested_reference: str) -> str:
-    reference = str(payload.get("reference") or requested_reference)
-    translation = str(payload.get("translation_id") or payload.get("translation") or "")
+    body = _live_payload_body(payload)
+    reference = str(body.get("reference") or requested_reference)
+    translation = str(body.get("translation_id") or body.get("translation") or "")
     output = io.StringIO(newline="")
     writer = csv.writer(output)
     writer.writerow(["reference", "translation", "verse_reference", "text"])
 
-    verses = payload.get("verses")
-    usable_verses = [verse for verse in verses if isinstance(verse, dict)] if isinstance(verses, list) else []
+    usable_verses = _live_usable_verses(body)
     if usable_verses:
         for verse in usable_verses:
-            writer.writerow([reference, translation, _live_verse_reference(verse), str(verse.get("text", ""))])
+            writer.writerow([reference, translation, _live_verse_reference(verse), _live_text(verse)])
     else:
-        writer.writerow([reference, translation, reference, str(payload.get("text", ""))])
+        writer.writerow([reference, translation, reference, _live_text(body)])
     return output.getvalue()
+
+
+def _live_payload_body(payload: dict[str, Any]) -> dict[str, Any]:
+    data = payload.get("data")
+    return data if isinstance(data, dict) else payload
+
+
+def _live_usable_verses(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    verses = payload.get("verses") or payload.get("passages")
+    return [verse for verse in verses if isinstance(verse, dict)] if isinstance(verses, list) else []
 
 
 def _live_verse_reference(verse: dict[str, Any]) -> str:
@@ -326,6 +335,17 @@ def _live_verse_reference(verse: dict[str, Any]) -> str:
     if book_name and chapter and verse_number:
         return f"{book_name} {chapter}:{verse_number}"
     return ""
+
+
+def _live_text(value: Any) -> str:
+    if isinstance(value, dict):
+        for key in ("text", "content", "verse_text"):
+            if key in value:
+                return _live_text(value[key])
+        return ""
+    if isinstance(value, list):
+        return " ".join(part for part in (_live_text(item).strip() for item in value) if part)
+    return str(value)
 
 
 def _render_compare_csv(reference: str, results: Sequence[PassageResult]) -> str:

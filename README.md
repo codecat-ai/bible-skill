@@ -20,7 +20,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Extract Bible references from arbitrary notes, sermons, or Markdown using the same local parser and book data.
 - Export local query results as minimal deterministic USFM-like text.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
-- Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, JSON, Markdown, or CSV output.
+- Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
 ## Installation
@@ -87,7 +87,7 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, and license URL when the provider supplies it. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
-The live fallback supports `--json` for the raw bible-api.com response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive.
+The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing.
 
 ## Data and licensing
 
@@ -112,7 +112,7 @@ The test suite covers reference parsing, local metadata search, local passage lo
 
 ## Roadmap
 
-- Support more provider data shapes and document provider-specific live response differences, including live CSV fallback fields.
+- Add offline fixture coverage for provider error responses and rate-limit messages.
 - Prepare a packaged release after manual registry verification.
 
 ## Contributing
