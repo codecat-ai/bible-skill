@@ -466,7 +466,9 @@ def test_cli_compare_rejects_csv_with_other_output_modes(tmp_path: Path, other_f
 def test_cli_live_markdown_exports_verse_list(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
         assert reference == "John 3:16-17"
         assert translation == "web"
         return {
@@ -493,7 +495,9 @@ def test_cli_live_markdown_exports_verse_list(
 def test_cli_live_markdown_escapes_sensitive_text(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
         return {
             "reference": "# John 3:16",
             "verses": [
@@ -521,7 +525,9 @@ def test_cli_live_markdown_escapes_sensitive_text(
 def test_cli_live_markdown_exports_top_level_text_when_no_verses(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
         return {
             "reference": "John 3:16",
             "text": "  Top-level\n\ntext with\tspacing.  ",
@@ -542,7 +548,9 @@ def test_cli_live_markdown_exports_top_level_text_when_no_verses(
 def test_cli_live_markdown_renders_data_wrapped_passages_with_nested_fragments(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
         return {
             "data": {
                 "reference": "John 3:16-17",
@@ -591,7 +599,9 @@ def test_cli_live_json_outputs_raw_provider_payload_for_data_wrapped_shape(
         }
     }
 
-    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
         return provider_payload
 
     monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
@@ -673,7 +683,9 @@ def test_render_live_csv_renders_data_wrapped_verses_with_alternate_text_keys() 
 def test_cli_live_csv_exports_spreadsheet_rows(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
         assert reference == "John 3:16"
         assert translation == "web"
         return {
@@ -693,6 +705,41 @@ def test_cli_live_csv_exports_spreadsheet_rows(
         ["reference", "translation", "verse_reference", "text"],
         ["John 3:16", "web", "John 3:16", 'For God, "loved".'],
     ]
+
+
+def test_cli_live_passes_timeout_and_retries_to_provider(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seen_options: list[tuple[str, str, float, int]] = []
+
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
+        seen_options.append((reference, translation, timeout, retries))
+        return {"reference": "John 3:16", "text": "Example text."}
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--translation", "web", "--timeout", "2.5", "--retries", "3"])
+
+    assert code == 0
+    assert seen_options == [("John 3:16", "web", 2.5, 3)]
+    assert capsys.readouterr().out.splitlines() == ["John 3:16", "Example text."]
+
+
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    [
+        ("--timeout", "0"),
+        ("--timeout", "-1"),
+        ("--retries", "-1"),
+    ],
+)
+def test_cli_live_rejects_invalid_timeout_and_retries(flag: str, value: str) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["live", "John 3:16", flag, value])
+
+    assert exc_info.value.code == 2
 
 
 def test_cli_live_rejects_json_and_markdown_together() -> None:

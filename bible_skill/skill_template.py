@@ -30,6 +30,8 @@ def render_skill(data_dir: str) -> str:
         "- List downloadable translations: `bible-skill translations`",
         f"- Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir {data_dir}`",
         '- Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`',
+        "- Set live fallback timeout and bounded transient retries for automation: "
+        '`bible-skill live "John 3:16" --translation web --timeout 10 --retries 2`',
         "- Export a live fallback passage as Markdown for notes: "
         '`bible-skill live "John 3:16" --translation web --markdown`',
         "- Export a live fallback passage as CSV for spreadsheets: "
@@ -44,8 +46,9 @@ def render_skill(data_dir: str) -> str:
         "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "
         "wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, "
         "`content`, `verse_text`, or nested mixed fragments.",
+        "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls; semantic provider "
+        "responses such as 404/no passage found are not retried.",
         "Live provider HTTP errors include the status, useful provider error text when available, and `Retry-After` "
         "backoff hints when returned.",
-        "",
     ]
     return "\n".join(lines)

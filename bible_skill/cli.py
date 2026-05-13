@@ -83,6 +83,8 @@ def build_parser() -> argparse.ArgumentParser:
     live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
     live.add_argument("reference")
     live.add_argument("--translation", default="web")
+    live.add_argument("--timeout", default=30.0, type=_positive_float, metavar="SECONDS")
+    live.add_argument("--retries", default=0, type=_nonnegative_int, metavar="COUNT")
     live_output = live.add_mutually_exclusive_group()
     live_output.add_argument("--json", action="store_true")
     live_output.add_argument("--markdown", action="store_true")
@@ -212,7 +214,7 @@ def _compare(args: argparse.Namespace) -> int:
 
 
 def _live(args: argparse.Namespace) -> int:
-    payload = BibleApiClient().passage(args.reference, args.translation)
+    payload = BibleApiClient().passage(args.reference, args.translation, timeout=args.timeout, retries=args.retries)
     if args.json:
         _print_json(payload)
     elif args.markdown:
@@ -223,6 +225,26 @@ def _live(args: argparse.Namespace) -> int:
         print(payload.get("reference", args.reference))
         print(payload.get("text", "").strip())
     return 0
+
+
+def _positive_float(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be a positive number of seconds") from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("must be a positive number of seconds")
+    return parsed
+
+
+def _nonnegative_int(value: str) -> int:
+    try:
+        parsed = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("must be a non-negative integer") from exc
+    if parsed < 0:
+        raise argparse.ArgumentTypeError("must be a non-negative integer")
+    return parsed
 
 
 def _skill(args: argparse.Namespace) -> int:

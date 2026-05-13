@@ -13,6 +13,8 @@ class ProviderError(RuntimeError):
 
 _HTTP_ERROR_DETAIL_LIMIT = 240
 _HTTP_ERROR_MESSAGE_FIELDS = ("error", "message", "detail", "reason")
+_DEFAULT_HTTP_TIMEOUT = 30.0
+_RETRYABLE_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
 
 class FreeUseBibleApiClient:
@@ -49,10 +51,12 @@ class BibleApiClient:
     def __init__(self, base_url: str = "https://bible-api.com") -> None:
         self.base_url = base_url.rstrip("/")
 
-    def passage(self, reference: str, translation: str = "web") -> dict[str, Any]:
+    def passage(
+        self, reference: str, translation: str = "web", *, timeout: float = _DEFAULT_HTTP_TIMEOUT, retries: int = 0
+    ) -> dict[str, Any]:
         query = urlencode({"translation": translation})
         url = f"{self.base_url}/{quote(reference)}?{query}"
-        payload = _get_json(url)
+        payload = _get_json(url, timeout=timeout, retries=retries)
         if not isinstance(payload, dict):
             raise ProviderError("Live passage response has an unsupported shape.")
         if payload.get("error"):
@@ -60,20 +64,31 @@ class BibleApiClient:
         return payload
 
 
-def _get_json(url: str) -> Any:
+def _get_json(url: str, *, timeout: float = _DEFAULT_HTTP_TIMEOUT, retries: int = 0) -> Any:
     if urlparse(url).scheme not in {"https", "http"}:
         raise ProviderError(f"Unsupported URL scheme for {url}")
     request = Request(url, headers={"User-Agent": "bible-skill/0.1"})  # noqa: S310
-    try:
-        with urlopen(request, timeout=30) as response:  # noqa: S310
-            charset = response.headers.get_content_charset() or "utf-8"
-            return json.loads(response.read().decode(charset))
-    except HTTPError as exc:
-        raise ProviderError(_format_http_error(exc, url)) from exc
-    except URLError as exc:
-        raise ProviderError(f"Network error while fetching {url}: {exc.reason}") from exc
-    except json.JSONDecodeError as exc:
-        raise ProviderError(f"Invalid JSON from {url}") from exc
+    for attempt in range(retries + 1):
+        try:
+            with urlopen(request, timeout=timeout) as response:  # noqa: S310
+                charset = response.headers.get_content_charset() or "utf-8"
+                return json.loads(response.read().decode(charset))
+        except HTTPError as exc:
+            if attempt < retries and _is_retryable_http_error(exc):
+                continue
+            raise ProviderError(_format_http_error(exc, url)) from exc
+        except URLError as exc:
+            if attempt < retries:
+                continue
+            raise ProviderError(f"Network error while fetching {url}: {exc.reason}") from exc
+        except json.JSONDecodeError as exc:
+            raise ProviderError(f"Invalid JSON from {url}") from exc
+
+    raise ProviderError(f"Network error while fetching {url}: retry attempts exhausted")
+
+
+def _is_retryable_http_error(exc: HTTPError) -> bool:
+    return exc.code in _RETRYABLE_HTTP_STATUS_CODES
 
 
 def _format_http_error(exc: HTTPError, url: str) -> str:
