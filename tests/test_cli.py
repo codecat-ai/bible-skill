@@ -127,6 +127,61 @@ def test_cli_search_rejects_blank_query(tmp_path: Path, capsys: pytest.CaptureFi
     assert "Search query cannot be blank" in capsys.readouterr().err
 
 
+def test_cli_extract_text_outputs_normalized_references(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["extract", "--text", "See John 3:16, then JHN 3:16 and Genesis 1."])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == ["John 3:16", "Genesis 1"]
+
+
+def test_cli_extract_file_json_outputs_machine_readable_rows(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    notes = tmp_path / "notes.md"
+    notes.write_text("Discuss Romans 8:28-30 and JHN 3:16-4:2.", encoding="utf-8")
+
+    code = main(["extract", "--file", str(notes), "--json"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == [
+        {
+            "matched_text": "Romans 8:28-30",
+            "normalized_reference": "Romans 8:28-30",
+            "start": 8,
+            "end": 22,
+            "book_id": "ROM",
+            "book_name": "Romans",
+            "start_chapter": 8,
+            "start_verse": 28,
+            "end_chapter": 8,
+            "end_verse": 30,
+        },
+        {
+            "matched_text": "JHN 3:16-4:2",
+            "normalized_reference": "John 3:16-4:2",
+            "start": 27,
+            "end": 39,
+            "book_id": "JHN",
+            "book_name": "John",
+            "start_chapter": 3,
+            "start_verse": 16,
+            "end_chapter": 4,
+            "end_verse": 2,
+        },
+    ]
+
+
+def test_cli_extract_rejects_text_and_file_together(tmp_path: Path) -> None:
+    notes = tmp_path / "notes.md"
+    notes.write_text("John 3:16", encoding="utf-8")
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["extract", "--text", "John 3:16", "--file", str(notes)])
+
+    assert exc_info.value.code == 2
+
+
 def test_cli_compare_json_aligns_multiple_local_translations(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

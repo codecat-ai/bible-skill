@@ -17,6 +17,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - List installed translations with book, chapter, and verse counts.
 - Search installed translation metadata locally by id, name, language, license URL, or source URL.
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
+- Extract Bible references from arbitrary notes, sermons, or Markdown using the same local parser and book data.
 - Export local query results as minimal deterministic USFM-like text.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, JSON, Markdown, or CSV output.
@@ -55,6 +56,8 @@ bible-skill query web "JHN 3:16-4:2" --data-dir ./data --usfm
 bible-skill compare "John 3:16" web kjv --data-dir ./data --json
 bible-skill compare "John 3:16" web kjv --data-dir ./data --markdown
 bible-skill compare "John 3:16" web kjv --data-dir ./data --csv
+bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30."
+bible-skill extract --file sermon-notes.md --json
 bible-skill live "John 3:16" --translation web
 bible-skill live "John 3:16" --translation web --markdown
 bible-skill live "John 3:16" --translation web --csv
@@ -71,6 +74,12 @@ Local queries accept:
 - same-chapter range: `John 3:16-18`
 - same-book cross-chapter range: `John 3:16-4:2`
 - USFM book IDs: `JHN 3:16`
+
+## Reference extraction
+
+Use `bible-skill extract` to scan notes, sermons, or Markdown before querying or comparing passages. `--text TEXT` and `--file PATH` are mutually exclusive, and one is required. Text output prints one de-duplicated normalized reference per line, preserving first appearance order. `--json` emits rows with matched text, normalized reference, offsets, book id/name, and start/end chapter and verse fields.
+
+The pure Python API is available as `bible_skill.extract.extract_references(text)` for agent and application workflows. Extraction recognizes the same book names, aliases, and USFM IDs accepted by `parse_reference`, including forms such as `John 3:16`, `JHN 3:16-4:2`, `Genesis 1`, and `Romans 8:28-30`.
 
 ## Configuration
 
