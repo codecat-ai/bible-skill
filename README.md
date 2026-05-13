@@ -21,6 +21,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Export local query results as minimal deterministic USFM-like text.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output.
+- Report live provider HTTP failures with useful provider messages, compact body excerpts, and `Retry-After` backoff hints when available.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
 ## Installation
@@ -87,7 +88,7 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, and license URL when the provider supplies it. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
-The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing.
+The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
 
 ## Data and licensing
 
@@ -108,11 +109,12 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints and error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
-- Add offline fixture coverage for provider error responses and rate-limit messages.
+- Add checksum or schema validation for downloaded translation cache files.
+- Add configurable live-provider timeout and retry settings for automation environments.
 - Prepare a packaged release after manual registry verification.
 
 ## Contributing
