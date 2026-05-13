@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from bible_skill.cli import _render_compare_csv, main
+from bible_skill.cli import _render_compare_csv, _render_live_csv, main
 from bible_skill.providers import BibleApiClient
 from bible_skill.query import PassageResult, VerseResult
 from bible_skill.store import Store
@@ -333,8 +333,77 @@ def test_cli_live_markdown_exports_top_level_text_when_no_verses(
     ]
 
 
+def test_render_live_csv_exports_one_row_per_usable_verse() -> None:
+    output = _render_live_csv(
+        {
+            "reference": "John 3:16-17",
+            "translation_id": "web",
+            "verses": [
+                {"book_name": "John", "chapter": 3, "verse": 16, "text": 'For God, "loved".'},
+                {"book_name": "John", "chapter": 3, "verse": 17, "text": "For God sent\nhis Son."},
+            ],
+        },
+        "John 3:16-17",
+    )
+
+    assert list(csv.reader(io.StringIO(output))) == [
+        ["reference", "translation", "verse_reference", "text"],
+        ["John 3:16-17", "web", "John 3:16", 'For God, "loved".'],
+        ["John 3:16-17", "web", "John 3:17", "For God sent\nhis Son."],
+    ]
+
+
+def test_render_live_csv_exports_top_level_text_when_no_usable_verses() -> None:
+    output = _render_live_csv(
+        {
+            "translation": "web",
+            "verses": ["unsupported"],
+            "text": "Top-level, fallback text.",
+        },
+        "John 3:16",
+    )
+
+    assert list(csv.reader(io.StringIO(output))) == [
+        ["reference", "translation", "verse_reference", "text"],
+        ["John 3:16", "web", "John 3:16", "Top-level, fallback text."],
+    ]
+
+
+def test_cli_live_csv_exports_spreadsheet_rows(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+        assert reference == "John 3:16"
+        assert translation == "web"
+        return {
+            "reference": "John 3:16",
+            "translation_id": "web",
+            "verses": [
+                {"book_name": "John", "chapter": 3, "verse": 16, "text": 'For God, "loved".'},
+            ],
+        }
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--translation", "web", "--csv"])
+
+    assert code == 0
+    assert list(csv.reader(io.StringIO(capsys.readouterr().out))) == [
+        ["reference", "translation", "verse_reference", "text"],
+        ["John 3:16", "web", "John 3:16", 'For God, "loved".'],
+    ]
+
+
 def test_cli_live_rejects_json_and_markdown_together() -> None:
     with pytest.raises(SystemExit) as exc_info:
         main(["live", "John 3:16", "--json", "--markdown"])
+
+    assert exc_info.value.code == 2
+
+
+@pytest.mark.parametrize("other_flag", ["--json", "--markdown"])
+def test_cli_live_rejects_csv_with_other_output_modes(other_flag: str) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["live", "John 3:16", "--csv", other_flag])
 
     assert exc_info.value.code == 2

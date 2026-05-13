@@ -79,6 +79,7 @@ def build_parser() -> argparse.ArgumentParser:
     live_output = live.add_mutually_exclusive_group()
     live_output.add_argument("--json", action="store_true")
     live_output.add_argument("--markdown", action="store_true")
+    live_output.add_argument("--csv", action="store_true")
     live.set_defaults(func=_live)
 
     skill = subparsers.add_parser("skill", parents=[common], help="Print a Hermes-compatible SKILL.md.")
@@ -185,6 +186,8 @@ def _live(args: argparse.Namespace) -> int:
         _print_json(payload)
     elif args.markdown:
         print(_render_live_markdown(payload, args.reference))
+    elif args.csv:
+        sys.stdout.write(_render_live_csv(payload, args.reference))
     else:
         print(payload.get("reference", args.reference))
         print(payload.get("text", "").strip())
@@ -240,6 +243,23 @@ def _render_live_markdown(payload: dict[str, Any], requested_reference: str) -> 
     else:
         lines.append(f"- **{_markdown_text(reference)}** {_markdown_text(str(payload.get('text', '')))}")
     return "\n".join(lines)
+
+
+def _render_live_csv(payload: dict[str, Any], requested_reference: str) -> str:
+    reference = str(payload.get("reference") or requested_reference)
+    translation = str(payload.get("translation_id") or payload.get("translation") or "")
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["reference", "translation", "verse_reference", "text"])
+
+    verses = payload.get("verses")
+    usable_verses = [verse for verse in verses if isinstance(verse, dict)] if isinstance(verses, list) else []
+    if usable_verses:
+        for verse in usable_verses:
+            writer.writerow([reference, translation, _live_verse_reference(verse), str(verse.get("text", ""))])
+    else:
+        writer.writerow([reference, translation, reference, str(payload.get("text", ""))])
+    return output.getvalue()
 
 
 def _live_verse_reference(verse: dict[str, Any]) -> str:

@@ -15,6 +15,7 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 - Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir ./data`
 - Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`
 - Export a live fallback passage as Markdown for notes: `bible-skill live "John 3:16" --translation web --markdown`
+- Export a live fallback passage as CSV for spreadsheets: `bible-skill live "John 3:16" --translation web --csv`
 
 ## Operating Rules
 

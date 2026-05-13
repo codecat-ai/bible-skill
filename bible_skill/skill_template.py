@@ -26,6 +26,8 @@ def render_skill(data_dir: str) -> str:
         '- Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`',
         "- Export a live fallback passage as Markdown for notes: "
         '`bible-skill live "John 3:16" --translation web --markdown`',
+        "- Export a live fallback passage as CSV for spreadsheets: "
+        '`bible-skill live "John 3:16" --translation web --csv`',
         "",
         "## Operating Rules",
         "",
