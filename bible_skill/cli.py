@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import csv
+import io
 import json
 import sys
 from collections.abc import Sequence
@@ -68,6 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
     compare_output = compare.add_mutually_exclusive_group()
     compare_output.add_argument("--json", action="store_true")
     compare_output.add_argument("--markdown", action="store_true")
+    compare_output.add_argument("--csv", action="store_true")
     compare.set_defaults(func=_compare)
 
     live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
@@ -163,6 +166,8 @@ def _compare(args: argparse.Namespace) -> int:
         )
     elif args.markdown:
         print(_render_compare_markdown(reference, results))
+    elif args.csv:
+        sys.stdout.write(_render_compare_csv(reference, results))
     else:
         print(reference)
         for result in results:
@@ -216,6 +221,16 @@ def _render_compare_markdown(reference: str, results: Sequence[PassageResult]) -
         for verse in result.verses:
             lines.append(f"- **{_markdown_text(verse.reference)}** {_markdown_text(verse.text)}")
     return "\n".join(lines)
+
+
+def _render_compare_csv(reference: str, results: Sequence[PassageResult]) -> str:
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(["reference", "translation_id", "translation_name", "verse_reference", "text"])
+    for result in results:
+        for verse in result.verses:
+            writer.writerow([reference, result.translation_id, result.translation_name, verse.reference, verse.text])
+    return output.getvalue()
 
 
 def _markdown_text(value: str) -> str:

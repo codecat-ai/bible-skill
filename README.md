@@ -18,7 +18,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Search installed translation metadata locally by id, name, language, license URL, or source URL.
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
 - Export local query results as minimal deterministic USFM-like text.
-- Compare the same local passage across two or more installed translations in text, JSON, or Markdown.
+- Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
@@ -54,6 +54,7 @@ bible-skill query web "JHN 3:16-4:2" --data-dir ./data --json
 bible-skill query web "JHN 3:16-4:2" --data-dir ./data --usfm
 bible-skill compare "John 3:16" web kjv --data-dir ./data --json
 bible-skill compare "John 3:16" web kjv --data-dir ./data --markdown
+bible-skill compare "John 3:16" web kjv --data-dir ./data --csv
 bible-skill live "John 3:16" --translation web
 bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 ```
@@ -92,7 +93,7 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, USFM export and comparison, Free Use Bible API response normalization, provider endpoints, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 

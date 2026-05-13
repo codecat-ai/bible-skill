@@ -14,4 +14,5 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert (
         "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --markdown" in text
     )
+    assert "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --csv" in text
     assert "bible-skill download TRANSLATION_ID --data-dir ./example-data" in text
