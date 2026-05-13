@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import csv
+import io
 import json
 from pathlib import Path
 
 import pytest
 
-from bible_skill.cli import main
+from bible_skill.cli import _render_compare_csv, main
+from bible_skill.query import PassageResult, VerseResult
 from bible_skill.store import Store
 from tests.fixtures import tiny_translation
 
@@ -186,11 +189,68 @@ def test_cli_compare_markdown_exports_readable_sections(tmp_path: Path, capsys: 
     ]
 
 
+def test_render_compare_csv_exports_escaped_rows_in_translation_order() -> None:
+    output = _render_compare_csv(
+        "John 3:16-17",
+        [
+            PassageResult(
+                translation_id="toy",
+                translation_name='Toy, "Quoted" Translation',
+                normalized_reference="John 3:16-17",
+                verses=[
+                    VerseResult(reference="John 3:16", text='Fixture, "loved" line.'),
+                    VerseResult(reference="John 3:17", text="Fixture sent\nline."),
+                ],
+            ),
+            PassageResult(
+                translation_id="alt",
+                translation_name="Alternate Fixture Translation",
+                normalized_reference="John 3:16-17",
+                verses=[VerseResult(reference="John 3:16", text="Alternate loved line.")],
+            ),
+        ],
+    )
+
+    assert list(csv.reader(io.StringIO(output))) == [
+        ["reference", "translation_id", "translation_name", "verse_reference", "text"],
+        ["John 3:16-17", "toy", 'Toy, "Quoted" Translation', "John 3:16", 'Fixture, "loved" line.'],
+        ["John 3:16-17", "toy", 'Toy, "Quoted" Translation', "John 3:17", "Fixture sent\nline."],
+        ["John 3:16-17", "alt", "Alternate Fixture Translation", "John 3:16", "Alternate loved line."],
+    ]
+
+
+def test_cli_compare_csv_exports_spreadsheet_rows(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16-17", "alt", "toy", "--csv"])
+
+    assert code == 0
+    assert list(csv.reader(io.StringIO(capsys.readouterr().out))) == [
+        ["reference", "translation_id", "translation_name", "verse_reference", "text"],
+        ["John 3:16-17", "alt", "Alternate Fixture Translation", "John 3:16", "Alternate loved line."],
+        ["John 3:16-17", "alt", "Alternate Fixture Translation", "John 3:17", "Fixture sent line."],
+        ["John 3:16-17", "toy", "Toy Test Translation", "John 3:16", "Fixture loved line."],
+        ["John 3:16-17", "toy", "Toy Test Translation", "John 3:17", "Fixture sent line."],
+    ]
+
+
 def test_cli_compare_rejects_json_and_markdown_together(tmp_path: Path) -> None:
     seed_translation(tmp_path)
     seed_second_translation(tmp_path)
 
     with pytest.raises(SystemExit) as exc_info:
         main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--json", "--markdown"])
+
+    assert exc_info.value.code == 2
+
+
+@pytest.mark.parametrize("other_flag", ["--json", "--markdown"])
+def test_cli_compare_rejects_csv_with_other_output_modes(tmp_path: Path, other_flag: str) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--csv", other_flag])
 
     assert exc_info.value.code == 2

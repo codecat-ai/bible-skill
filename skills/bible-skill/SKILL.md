@@ -10,6 +10,7 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 - Export an exact local passage as minimal USFM-like text: `bible-skill query TRANSLATION_ID REFERENCE --data-dir ./data --usfm`
 - Compare an exact passage across local translations: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./data`
 - Export a comparison as Markdown for notes or agent context: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./data --markdown`
+- Export a comparison as CSV for spreadsheets: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./data --csv`
 - List downloadable translations: `bible-skill translations`
 - Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir ./data`
 - Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`
