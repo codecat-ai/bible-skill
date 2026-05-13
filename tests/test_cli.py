@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from bible_skill.cli import _render_compare_csv, main
+from bible_skill.providers import BibleApiClient
 from bible_skill.query import PassageResult, VerseResult
 from bible_skill.store import Store
 from tests.fixtures import tiny_translation
@@ -252,5 +253,88 @@ def test_cli_compare_rejects_csv_with_other_output_modes(tmp_path: Path, other_f
 
     with pytest.raises(SystemExit) as exc_info:
         main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--csv", other_flag])
+
+    assert exc_info.value.code == 2
+
+
+def test_cli_live_markdown_exports_verse_list(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+        assert reference == "John 3:16-17"
+        assert translation == "web"
+        return {
+            "reference": "John 3:16-17",
+            "verses": [
+                {"book_name": "John", "chapter": 3, "verse": 16, "text": "For God loved."},
+                {"book_name": "John", "chapter": 3, "verse": 17, "text": "For God sent."},
+            ],
+        }
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16-17", "--translation", "web", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16-17",
+        "",
+        "- **John 3:16** For God loved.",
+        "- **John 3:17** For God sent.",
+    ]
+
+
+def test_cli_live_markdown_escapes_sensitive_text(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+        return {
+            "reference": "# John 3:16",
+            "verses": [
+                {
+                    "book_name": "John",
+                    "chapter": 3,
+                    "verse": 16,
+                    "text": "Text with *stars*\n- accidental list | table",
+                }
+            ],
+        }
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# \\# John 3:16",
+        "",
+        "- **John 3:16** Text with \\*stars\\* \\- accidental list \\| table",
+    ]
+
+
+def test_cli_live_markdown_exports_top_level_text_when_no_verses(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(self: BibleApiClient, reference: str, translation: str = "web") -> dict[str, object]:
+        return {
+            "reference": "John 3:16",
+            "text": "  Top-level\n\ntext with\tspacing.  ",
+        }
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16",
+        "",
+        "- **John 3:16** Top-level text with spacing.",
+    ]
+
+
+def test_cli_live_rejects_json_and_markdown_together() -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["live", "John 3:16", "--json", "--markdown"])
 
     assert exc_info.value.code == 2

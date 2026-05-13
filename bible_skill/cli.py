@@ -76,7 +76,9 @@ def build_parser() -> argparse.ArgumentParser:
     live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
     live.add_argument("reference")
     live.add_argument("--translation", default="web")
-    live.add_argument("--json", action="store_true")
+    live_output = live.add_mutually_exclusive_group()
+    live_output.add_argument("--json", action="store_true")
+    live_output.add_argument("--markdown", action="store_true")
     live.set_defaults(func=_live)
 
     skill = subparsers.add_parser("skill", parents=[common], help="Print a Hermes-compatible SKILL.md.")
@@ -181,6 +183,8 @@ def _live(args: argparse.Namespace) -> int:
     payload = BibleApiClient().passage(args.reference, args.translation)
     if args.json:
         _print_json(payload)
+    elif args.markdown:
+        print(_render_live_markdown(payload, args.reference))
     else:
         print(payload.get("reference", args.reference))
         print(payload.get("text", "").strip())
@@ -221,6 +225,33 @@ def _render_compare_markdown(reference: str, results: Sequence[PassageResult]) -
         for verse in result.verses:
             lines.append(f"- **{_markdown_text(verse.reference)}** {_markdown_text(verse.text)}")
     return "\n".join(lines)
+
+
+def _render_live_markdown(payload: dict[str, Any], requested_reference: str) -> str:
+    reference = str(payload.get("reference") or requested_reference)
+    lines = [f"# {_markdown_text(reference)}", ""]
+    verses = payload.get("verses")
+    if isinstance(verses, list) and verses:
+        for verse in verses:
+            if not isinstance(verse, dict):
+                continue
+            verse_reference = _live_verse_reference(verse)
+            lines.append(f"- **{_markdown_text(verse_reference)}** {_markdown_text(str(verse.get('text', '')))}")
+    else:
+        lines.append(f"- **{_markdown_text(reference)}** {_markdown_text(str(payload.get('text', '')))}")
+    return "\n".join(lines)
+
+
+def _live_verse_reference(verse: dict[str, Any]) -> str:
+    reference = verse.get("reference")
+    if reference:
+        return str(reference)
+    book_name = verse.get("book_name") or verse.get("book")
+    chapter = verse.get("chapter")
+    verse_number = verse.get("verse")
+    if book_name and chapter and verse_number:
+        return f"{book_name} {chapter}:{verse_number}"
+    return ""
 
 
 def _render_compare_csv(reference: str, results: Sequence[PassageResult]) -> str:

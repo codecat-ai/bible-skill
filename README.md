@@ -19,7 +19,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
 - Export local query results as minimal deterministic USFM-like text.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
-- Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible.
+- Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, JSON, or Markdown output.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
 ## Installation
@@ -56,6 +56,7 @@ bible-skill compare "John 3:16" web kjv --data-dir ./data --json
 bible-skill compare "John 3:16" web kjv --data-dir ./data --markdown
 bible-skill compare "John 3:16" web kjv --data-dir ./data --csv
 bible-skill live "John 3:16" --translation web
+bible-skill live "John 3:16" --translation web --markdown
 bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 ```
 
@@ -73,6 +74,8 @@ Local queries accept:
 ## Configuration
 
 Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, and license URL when the provider supplies it. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
+
+The live fallback supports `--json` for the raw bible-api.com response and `--markdown` for note-friendly output. `--json` and `--markdown` are mutually exclusive.
 
 ## Data and licensing
 
@@ -97,7 +100,7 @@ The test suite covers reference parsing, local metadata search, local passage lo
 
 ## Roadmap
 
-- Support more provider data shapes.
+- Support more provider data shapes and document provider-specific live response differences.
 - Prepare a packaged release after manual registry verification.
 
 ## Contributing
