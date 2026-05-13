@@ -8,6 +8,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
 
     assert "Use installed local translation data first" in text
     assert "bible-skill installed --data-dir ./example-data" in text
+    assert "bible-skill validate --data-dir ./example-data" in text
     assert "bible-skill search QUERY --data-dir ./example-data" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data --usfm" in text
@@ -24,5 +25,6 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert 'bible-skill live "John 3:16" --translation web --csv' in text
     assert "Live `--json` output is raw provider JSON." in text
     assert "Live provider HTTP errors include the status" in text
+    assert "use `--json` when callers need machine-readable issue lists" in text
     assert "top-level `data` object" in text
     assert "`content`, `verse_text`, or nested mixed fragments" in text

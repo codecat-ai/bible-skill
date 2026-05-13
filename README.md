@@ -15,6 +15,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Discover available translations from Free Use Bible API.
 - Download complete translations into a local data directory.
 - List installed translations with book, chapter, and verse counts.
+- Validate installed translation cache files for required metadata, book/chapter/verse structure, non-empty verse text, and deterministic checksums.
 - Search installed translation metadata locally by id, name, language, license URL, or source URL.
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
 - Extract Bible references from arbitrary notes, sermons, or Markdown using the same local parser and book data.
@@ -49,6 +50,8 @@ Do not use `pip install bible-skill`, `uvx bible-skill`, or similar registry com
 bible-skill translations --query web
 bible-skill download web --data-dir ./data
 bible-skill installed --data-dir ./data
+bible-skill validate --data-dir ./data
+bible-skill validate web --data-dir ./data --json
 bible-skill search english --data-dir ./data
 bible-skill search license.example --data-dir ./data --json
 bible-skill query web "John 3:16" --data-dir ./data
@@ -87,7 +90,7 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 ## Configuration
 
-Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, and license URL when the provider supplies it. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
+Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, license URL when the provider supplies it, and a deterministic `sha256:` checksum calculated from normalized translation content without the fetched timestamp. The `validate` command checks installed cache files before agents rely on them; pass optional translation IDs to validate only those caches, or omit IDs to validate every installed translation. Text output is tab-separated and concise, while `--json` emits objects with `translation_id`, `ok`, `checksum`, and `issues`. Validation exits non-zero if any requested cache is missing or invalid. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
 The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
 
@@ -110,11 +113,10 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints and error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum validation, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints and error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
-- Add checksum or schema validation for downloaded translation cache files.
 - Add configurable live-provider timeout and retry settings for automation environments.
 - Prepare a packaged release after manual registry verification.
 

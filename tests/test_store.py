@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from bible_skill.store import Store
@@ -42,3 +43,83 @@ def test_download_skips_existing_unless_forced(tmp_path: Path) -> None:
     store.download("toy", provider, force=True)
 
     assert provider.calls == ["toy", "toy"]
+
+
+def test_store_saves_translation_with_stable_checksum(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+
+    store.save_translation("toy", tiny_translation())
+    first = store.load_translation("toy")
+    first_checksum = first["metadata"]["checksum"]
+    first["metadata"]["fetched_at"] = "2099-01-01T00:00:00+00:00"
+    second_checksum = store.translation_checksum(first)
+
+    assert first_checksum.startswith("sha256:")
+    assert len(first_checksum) == 71
+    assert second_checksum == first_checksum
+
+
+def test_store_validates_installed_translation_cache(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+
+    result = store.validate_translation("toy")
+
+    assert result.translation_id == "toy"
+    assert result.ok is True
+    assert result.checksum == store.load_translation("toy")["metadata"]["checksum"]
+    assert result.issues == []
+
+
+def test_store_validation_reports_missing_required_metadata(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    path = tmp_path / "translations" / "toy" / "translation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    del data["metadata"]["name"]
+    data["metadata"]["checksum"] = store.translation_checksum(data)
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert "metadata.name is required" in result.issues
+
+
+def test_store_validation_reports_invalid_verse_structure(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    path = tmp_path / "translations" / "toy" / "translation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["books"][0]["chapters"][0]["verses"][0]["text"] = "   "
+    data["metadata"]["checksum"] = store.translation_checksum(data)
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert "books[0].chapters[0].verses[0].text must be non-empty" in result.issues
+
+
+def test_store_validation_reports_checksum_mismatch(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    path = tmp_path / "translations" / "toy" / "translation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["books"][1]["chapters"][0]["verses"][0]["text"] = "Corrupted line."
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert result.checksum == store.translation_checksum(data)
+    assert "metadata.checksum does not match translation content" in result.issues
+
+
+def test_store_validation_reports_missing_requested_translation(tmp_path: Path) -> None:
+    result = Store(tmp_path).validate_translation("missing")
+
+    assert result.translation_id == "missing"
+    assert result.ok is False
+    assert result.checksum == ""
+    assert result.issues == ["translation cache is missing"]

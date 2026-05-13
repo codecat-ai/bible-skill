@@ -53,6 +53,11 @@ def build_parser() -> argparse.ArgumentParser:
     installed.add_argument("--json", action="store_true")
     installed.set_defaults(func=_installed)
 
+    validate = subparsers.add_parser("validate", parents=[common], help="Validate installed translation cache files.")
+    validate.add_argument("translation_ids", nargs="*", help="Translation IDs to validate. Defaults to all installed.")
+    validate.add_argument("--json", action="store_true", help="Output JSON.")
+    validate.set_defaults(func=_validate)
+
     search = subparsers.add_parser("search", parents=[common], help="Search installed translation metadata.")
     search.add_argument("query")
     search.add_argument("--json", action="store_true")
@@ -130,6 +135,20 @@ def _installed(args: argparse.Namespace) -> int:
                 f"{row['book_count']} books\t{row['chapter_count']} chapters\t{row['verse_count']} verses"
             )
     return 0
+
+
+def _validate(args: argparse.Namespace) -> int:
+    store = Store(args.data_dir)
+    translation_ids = list(args.translation_ids) or store.cached_translation_ids()
+    results = [store.validate_translation(translation_id) for translation_id in translation_ids]
+    if args.json:
+        _print_json([result.to_dict() for result in results])
+    else:
+        for result in results:
+            status = "ok" if result.ok else "invalid"
+            issue_text = "" if result.ok else "\t" + "; ".join(result.issues)
+            print(f"{result.translation_id}\t{status}\t{result.checksum}{issue_text}")
+    return 0 if all(result.ok for result in results) else 2
 
 
 def _search(args: argparse.Namespace) -> int:

@@ -5,6 +5,7 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 ## Commands
 
 - List installed translations: `bible-skill installed --data-dir ./data`
+- Validate installed translation cache files: `bible-skill validate --data-dir ./data`
 - Search installed translation metadata: `bible-skill search QUERY --data-dir ./data`
 - Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir ./data`
 - Export an exact local passage as minimal USFM-like text: `bible-skill query TRANSLATION_ID REFERENCE --data-dir ./data --usfm`
@@ -24,5 +25,6 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 ## Operating Rules
 
 Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact wording from the tool output. Respect translation metadata and license URLs.
+Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local translations in automated workflows; use `--json` when callers need machine-readable issue lists.
 Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, `content`, `verse_text`, or nested mixed fragments.
 Live provider HTTP errors include the status, useful provider error text when available, and `Retry-After` backoff hints when returned.
