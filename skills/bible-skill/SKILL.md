@@ -11,6 +11,8 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 - Compare an exact passage across local translations: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./data`
 - Export a comparison as Markdown for notes or agent context: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./data --markdown`
 - Export a comparison as CSV for spreadsheets: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./data --csv`
+- Extract references from notes or sermons: `bible-skill extract --text "See John 3:16 and Romans 8:28-30"`
+- Extract references from a local Markdown file as JSON: `bible-skill extract --file notes.md --json`
 - List downloadable translations: `bible-skill translations`
 - Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir ./data`
 - Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`

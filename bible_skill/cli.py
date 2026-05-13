@@ -6,8 +6,10 @@ import io
 import json
 import sys
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 
+from bible_skill.extract import extract_references
 from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
 from bible_skill.query import PassageResult, QueryError, query_passage, render_usfm
 from bible_skill.search import search_installed
@@ -84,6 +86,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     skill = subparsers.add_parser("skill", parents=[common], help="Print a Hermes-compatible SKILL.md.")
     skill.set_defaults(func=_skill)
+
+    extract = subparsers.add_parser("extract", help="Extract Bible references from text or a local file.")
+    extract_input = extract.add_mutually_exclusive_group(required=True)
+    extract_input.add_argument("--text", help="Text to scan for Bible references.")
+    extract_input.add_argument("--file", help="Local UTF-8 text or Markdown file to scan.")
+    extract.add_argument("--json", action="store_true", help="Output JSON.")
+    extract.set_defaults(func=_extract)
     return parser
 
 
@@ -197,6 +206,24 @@ def _live(args: argparse.Namespace) -> int:
 def _skill(args: argparse.Namespace) -> int:
     store = Store(args.data_dir)
     print(render_skill(str(store.data_dir)))
+    return 0
+
+
+def _extract(args: argparse.Namespace) -> int:
+    if args.file:
+        try:
+            text = Path(args.file).read_text(encoding="utf-8")
+        except FileNotFoundError as exc:
+            raise OSError(f"Input file not found: {args.file}") from exc
+    else:
+        text = args.text
+
+    rows = extract_references(text)
+    if args.json:
+        _print_json([row.to_dict() for row in rows])
+    else:
+        for row in rows:
+            print(row.normalized_reference)
     return 0
 
 
