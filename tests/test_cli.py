@@ -198,6 +198,34 @@ def test_cli_extract_file_markdown_escapes_source_context(tmp_path: Path, capsys
     ]
 
 
+def test_cli_extract_file_csv_exports_spreadsheet_rows_with_source_context(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    notes = tmp_path / "notes.md"
+    notes.write_text(
+        'First line: "quote", John 3:16\nSecond line: Romans 8:28-30, review\n',
+        encoding="utf-8",
+    )
+
+    code = main(["extract", "--file", str(notes), "--csv"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "reference,book,chapter,start_verse,end_verse,start,end,context",
+        'John 3:16,John,3,16,16,21,30,"First line: ""quote"", John 3:16"',
+        'Romans 8:28-30,Romans,8,28,30,44,58,"Second line: Romans 8:28-30, review"',
+    ]
+
+
+def test_cli_extract_csv_reports_header_only_when_no_matches(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["extract", "--text", "No references in this note.", "--csv"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "reference,book,chapter,start_verse,end_verse,start,end,context",
+    ]
+
+
 def test_cli_extract_markdown_reports_no_matches(capsys: pytest.CaptureFixture[str]) -> None:
     code = main(["extract", "--text", "No references in this note.", "--markdown"])
 
@@ -207,6 +235,14 @@ def test_cli_extract_markdown_reports_no_matches(capsys: pytest.CaptureFixture[s
         "",
         "No Bible references found.",
     ]
+
+
+@pytest.mark.parametrize("other_flag", ["--json", "--markdown"])
+def test_cli_extract_rejects_csv_with_other_output_modes(other_flag: str) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["extract", "--text", "John 3:16", "--csv", other_flag])
+
+    assert exc_info.value.code == 2
 
 
 def test_cli_extract_rejects_json_and_markdown_together() -> None:

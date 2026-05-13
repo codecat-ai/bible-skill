@@ -61,6 +61,7 @@ bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30."
 bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30." --markdown
 bible-skill extract --file sermon-notes.md --json
 bible-skill extract --file sermon-notes.md --markdown
+bible-skill extract --file sermon-notes.md --csv
 bible-skill live "John 3:16" --translation web
 bible-skill live "John 3:16" --translation web --markdown
 bible-skill live "John 3:16" --translation web --csv
@@ -80,7 +81,7 @@ Local queries accept:
 
 ## Reference extraction
 
-Use `bible-skill extract` to scan notes, sermons, or Markdown before querying or comparing passages. `--text TEXT` and `--file PATH` are mutually exclusive, and one is required. Text output prints one de-duplicated normalized reference per line, preserving first appearance order. `--json` emits rows with matched text, normalized reference, offsets, book id/name, and start/end chapter and verse fields. `--markdown` emits a note-friendly summary headed `# Extracted Bible references`, with each normalized reference in bold and escaped source context when matches exist, or `No Bible references found.` when none do. `--json` and `--markdown` are mutually exclusive.
+Use `bible-skill extract` to scan notes, sermons, or Markdown before querying or comparing passages. `--text TEXT` and `--file PATH` are mutually exclusive, and one is required. Text output prints one de-duplicated normalized reference per line, preserving first appearance order. `--json` emits rows with matched text, normalized reference, offsets, book id/name, and start/end chapter and verse fields. `--markdown` emits a note-friendly summary headed `# Extracted Bible references`, with each normalized reference in bold and escaped source context when matches exist, or `No Bible references found.` when none do. `--csv` emits spreadsheet-friendly rows with `reference`, `book`, `chapter`, `start_verse`, `end_verse`, `start`, `end`, and `context` columns; empty results still print only the header row. `--json`, `--markdown`, and `--csv` are mutually exclusive.
 
 The pure Python API is available as `bible_skill.extract.extract_references(text)` for agent and application workflows. Extraction recognizes the same book names, aliases, and USFM IDs accepted by `parse_reference`, including forms such as `John 3:16`, `JHN 3:16-4:2`, `Genesis 1`, and `Romans 8:28-30`.
 
