@@ -24,6 +24,8 @@ def render_skill(data_dir: str) -> str:
         "- List downloadable translations: `bible-skill translations`",
         f"- Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir {data_dir}`",
         '- Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`',
+        "- Export a live fallback passage as Markdown for notes: "
+        '`bible-skill live "John 3:16" --translation web --markdown`',
         "",
         "## Operating Rules",
         "",
