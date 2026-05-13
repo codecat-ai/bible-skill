@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from bible_skill.extract import extract_references
+from bible_skill.extract import ExtractedReference, extract_references
 from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
 from bible_skill.query import PassageResult, QueryError, query_passage, render_usfm
 from bible_skill.search import search_installed
@@ -91,7 +91,9 @@ def build_parser() -> argparse.ArgumentParser:
     extract_input = extract.add_mutually_exclusive_group(required=True)
     extract_input.add_argument("--text", help="Text to scan for Bible references.")
     extract_input.add_argument("--file", help="Local UTF-8 text or Markdown file to scan.")
-    extract.add_argument("--json", action="store_true", help="Output JSON.")
+    extract_output = extract.add_mutually_exclusive_group()
+    extract_output.add_argument("--json", action="store_true", help="Output JSON.")
+    extract_output.add_argument("--markdown", action="store_true", help="Output a note-friendly Markdown summary.")
     extract.set_defaults(func=_extract)
     return parser
 
@@ -221,6 +223,8 @@ def _extract(args: argparse.Namespace) -> int:
     rows = extract_references(text)
     if args.json:
         _print_json([row.to_dict() for row in rows])
+    elif args.markdown:
+        print(_render_extract_markdown(text, rows))
     else:
         for row in rows:
             print(row.normalized_reference)
@@ -270,6 +274,29 @@ def _render_live_markdown(payload: dict[str, Any], requested_reference: str) -> 
     else:
         lines.append(f"- **{_markdown_text(reference)}** {_markdown_text(str(payload.get('text', '')))}")
     return "\n".join(lines)
+
+
+def _render_extract_markdown(text: str, rows: Sequence[ExtractedReference]) -> str:
+    lines = ["# Extracted Bible references", ""]
+    if not rows:
+        lines.append("No Bible references found.")
+        return "\n".join(lines)
+
+    for row in rows:
+        context = _extract_source_context(text, row.start, row.end)
+        if context:
+            lines.append(f"- **{_markdown_text(row.normalized_reference)}** {_markdown_text(context)}")
+        else:
+            lines.append(f"- **{_markdown_text(row.normalized_reference)}**")
+    return "\n".join(lines)
+
+
+def _extract_source_context(text: str, start: int, end: int) -> str:
+    line_start = text.rfind("\n", 0, start) + 1
+    line_end = text.find("\n", end)
+    if line_end == -1:
+        line_end = len(text)
+    return text[line_start:line_end].strip()
 
 
 def _render_live_csv(payload: dict[str, Any], requested_reference: str) -> str:

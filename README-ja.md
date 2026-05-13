@@ -57,7 +57,9 @@ bible-skill compare "John 3:16" web kjv --data-dir ./data --json
 bible-skill compare "John 3:16" web kjv --data-dir ./data --markdown
 bible-skill compare "John 3:16" web kjv --data-dir ./data --csv
 bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30."
+bible-skill extract --text "Discuss John 3:16 and Romans 8:28-30." --markdown
 bible-skill extract --file sermon-notes.md --json
+bible-skill extract --file sermon-notes.md --markdown
 bible-skill live "John 3:16" --translation web
 bible-skill live "John 3:16" --translation web --markdown
 bible-skill live "John 3:16" --translation web --csv
@@ -77,7 +79,7 @@ bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 
 ## 参照抽出
 
-箇所検索や比較の前に、`bible-skill extract` でノート、説教原稿、Markdown をスキャンできます。`--text TEXT` と `--file PATH` は同時に指定できず、どちらか一方が必須です。テキスト出力では、最初に現れた順序を保ちながら、重複を除いた正規化済み参照を 1 行に 1 件ずつ出力します。`--json` は、マッチした文字列、正規化済み参照、文字オフセット、書 ID/名前、開始/終了の章と節を含む行を出力します。
+箇所検索や比較の前に、`bible-skill extract` でノート、説教原稿、Markdown をスキャンできます。`--text TEXT` と `--file PATH` は同時に指定できず、どちらか一方が必須です。テキスト出力では、最初に現れた順序を保ちながら、重複を除いた正規化済み参照を 1 行に 1 件ずつ出力します。`--json` は、マッチした文字列、正規化済み参照、文字オフセット、書 ID/名前、開始/終了の章と節を含む行を出力します。`--markdown` は `# Extracted Bible references` で始まる、ノートに貼り付けやすい要約を出力します。マッチがある場合は、太字の正規化済み参照とエスケープ済みの元コンテキストを各行に出し、ない場合は `No Bible references found.` を出力します。`--json` と `--markdown` は同時に指定できません。
 
 純粋な Python API として `bible_skill.extract.extract_references(text)` も利用でき、Agent やアプリケーションのワークフローに組み込めます。抽出は `parse_reference` と同じ書名、別名、USFM ID を認識し、`John 3:16`、`JHN 3:16-4:2`、`Genesis 1`、`Romans 8:28-30` などの形式に対応します。
 

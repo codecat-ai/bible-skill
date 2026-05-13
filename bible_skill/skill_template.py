@@ -23,6 +23,8 @@ def render_skill(data_dir: str) -> str:
         f"`bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir {data_dir} --csv`",
         '- Extract references from notes or sermons: `bible-skill extract --text "See John 3:16 and Romans 8:28-30"`',
         "- Extract references from a local Markdown file as JSON: `bible-skill extract --file notes.md --json`",
+        "- Export extracted references from a local Markdown file as Markdown: "
+        "`bible-skill extract --file notes.md --markdown`",
         "- List downloadable translations: `bible-skill translations`",
         f"- Download an allowed translation: `bible-skill download TRANSLATION_ID --data-dir {data_dir}`",
         '- Use live fallback only when local data is unavailable: `bible-skill live "John 3:16" --translation web`',
