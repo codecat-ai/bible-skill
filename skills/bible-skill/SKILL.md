@@ -24,3 +24,4 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 
 Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact wording from the tool output. Respect translation metadata and license URLs.
 Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, `content`, `verse_text`, or nested mixed fragments.
+Live provider HTTP errors include the status, useful provider error text when available, and `Retry-After` backoff hints when returned.

@@ -11,6 +11,10 @@ class ProviderError(RuntimeError):
     pass
 
 
+_HTTP_ERROR_DETAIL_LIMIT = 240
+_HTTP_ERROR_MESSAGE_FIELDS = ("error", "message", "detail", "reason")
+
+
 class FreeUseBibleApiClient:
     def __init__(self, base_url: str = "https://bible.helloao.org/api") -> None:
         self.base_url = base_url.rstrip("/")
@@ -65,8 +69,66 @@ def _get_json(url: str) -> Any:
             charset = response.headers.get_content_charset() or "utf-8"
             return json.loads(response.read().decode(charset))
     except HTTPError as exc:
-        raise ProviderError(f"HTTP {exc.code} while fetching {url}") from exc
+        raise ProviderError(_format_http_error(exc, url)) from exc
     except URLError as exc:
         raise ProviderError(f"Network error while fetching {url}: {exc.reason}") from exc
     except json.JSONDecodeError as exc:
         raise ProviderError(f"Invalid JSON from {url}") from exc
+
+
+def _format_http_error(exc: HTTPError, url: str) -> str:
+    message = f"HTTP {exc.code} while fetching {url}"
+    detail = _http_error_detail(exc)
+    if detail:
+        message = f"{message}: {detail}"
+    retry_after = _normalized_text(exc.headers.get("Retry-After", ""))
+    if retry_after:
+        message = f"{message}. Retry after {retry_after}"
+    return message
+
+
+def _http_error_detail(exc: HTTPError) -> str:
+    body = exc.read()
+    if not body:
+        return ""
+    charset = exc.headers.get_content_charset() or "utf-8"
+    text = body.decode(charset, errors="replace")
+    json_detail = _json_error_detail(text)
+    if json_detail:
+        return json_detail
+    return _truncate_error_detail(_normalized_text(text))
+
+
+def _json_error_detail(text: str) -> str:
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    for field in _HTTP_ERROR_MESSAGE_FIELDS:
+        detail = _readable_json_error_value(payload.get(field))
+        if detail:
+            return detail
+    return ""
+
+
+def _readable_json_error_value(value: Any) -> str:
+    if isinstance(value, str):
+        return _truncate_error_detail(_normalized_text(value))
+    if isinstance(value, dict):
+        for field in _HTTP_ERROR_MESSAGE_FIELDS:
+            detail = _readable_json_error_value(value.get(field))
+            if detail:
+                return detail
+    return ""
+
+
+def _normalized_text(text: str) -> str:
+    return " ".join(text.split())
+
+
+def _truncate_error_detail(text: str) -> str:
+    if len(text) <= _HTTP_ERROR_DETAIL_LIMIT:
+        return text
+    return f"{text[: _HTTP_ERROR_DETAIL_LIMIT - 3].rstrip()}..."
