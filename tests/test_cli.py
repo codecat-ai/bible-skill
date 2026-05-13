@@ -172,6 +172,50 @@ def test_cli_extract_file_json_outputs_machine_readable_rows(
     ]
 
 
+def test_cli_extract_text_markdown_exports_note_friendly_summary(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["extract", "--text", "See John 3:16 and Romans 8:28-30", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# Extracted Bible references",
+        "",
+        "- **John 3:16** See John 3:16 and Romans 8:28-30",
+        "- **Romans 8:28-30** See John 3:16 and Romans 8:28-30",
+    ]
+
+
+def test_cli_extract_file_markdown_escapes_source_context(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    notes = tmp_path / "notes.md"
+    notes.write_text("Topic: *See* John 3:16 - discuss | table\n", encoding="utf-8")
+
+    code = main(["extract", "--file", str(notes), "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# Extracted Bible references",
+        "",
+        "- **John 3:16** Topic: \\*See\\* John 3:16 \\- discuss \\| table",
+    ]
+
+
+def test_cli_extract_markdown_reports_no_matches(capsys: pytest.CaptureFixture[str]) -> None:
+    code = main(["extract", "--text", "No references in this note.", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# Extracted Bible references",
+        "",
+        "No Bible references found.",
+    ]
+
+
+def test_cli_extract_rejects_json_and_markdown_together() -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main(["extract", "--text", "John 3:16", "--json", "--markdown"])
+
+    assert exc_info.value.code == 2
+
+
 def test_cli_extract_rejects_text_and_file_together(tmp_path: Path) -> None:
     notes = tmp_path / "notes.md"
     notes.write_text("John 3:16", encoding="utf-8")

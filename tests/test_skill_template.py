@@ -17,6 +17,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --csv" in text
     assert 'bible-skill extract --text "See John 3:16 and Romans 8:28-30"' in text
     assert "bible-skill extract --file notes.md --json" in text
+    assert "bible-skill extract --file notes.md --markdown" in text
     assert "bible-skill download TRANSLATION_ID --data-dir ./example-data" in text
     assert 'bible-skill live "John 3:16" --translation web --markdown' in text
     assert 'bible-skill live "John 3:16" --translation web --csv' in text
