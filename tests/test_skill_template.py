@@ -13,10 +13,15 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data --markdown" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data --usfm" in text
+    assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data --markdown --attribution" in text
     assert (
         "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --markdown" in text
     )
     assert "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --csv" in text
+    assert (
+        "bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir ./example-data --csv "
+        "--attribution" in text
+    )
     assert 'bible-skill extract --text "See John 3:16 and Romans 8:28-30"' in text
     assert "bible-skill extract --file notes.md --json" in text
     assert "bible-skill extract --file notes.md --markdown" in text
@@ -31,3 +36,4 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "top-level `data` object" in text
     assert "`content`, `verse_text`, or nested mixed fragments" in text
     assert "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls" in text
+    assert "Use local `--attribution` when outputs need translation license or source URLs." in text

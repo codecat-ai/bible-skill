@@ -54,6 +54,30 @@ def test_cli_query_json_outputs_machine_readable_passage(tmp_path: Path, capsys:
     assert payload["verses"] == [{"reference": "John 3:16", "text": "Fixture loved line."}]
 
 
+def test_cli_query_json_includes_attribution_when_requested(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--json", "--attribution"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["attribution"] == {
+        "license_url": "https://example.invalid/license",
+    }
+
+
+def test_cli_query_json_without_attribution_preserves_existing_shape(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--json"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "attribution" not in payload
+
+
 def test_cli_query_usfm_outputs_minimal_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
 
@@ -70,6 +94,21 @@ def test_cli_query_usfm_outputs_minimal_passage(tmp_path: Path, capsys: pytest.C
     ]
 
 
+def test_cli_query_usfm_includes_attribution_when_requested(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--usfm", "--attribution"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        r"\id toy",
+        r"\h Toy Test Translation",
+        r"\rem License: https://example.invalid/license",
+        r"\c 3",
+        r"\v 16 Fixture loved line.",
+    ]
+
+
 def test_cli_query_markdown_outputs_note_friendly_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
 
@@ -81,6 +120,36 @@ def test_cli_query_markdown_outputs_note_friendly_passage(tmp_path: Path, capsys
         "",
         "- **John 3:16** Fixture loved line.",
         "- **John 3:17** Fixture sent line.",
+    ]
+
+
+def test_cli_query_markdown_includes_attribution_when_requested(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--markdown", "--attribution"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16 (toy)",
+        "",
+        "> License: https://example.invalid/license",
+        "",
+        "- **John 3:16** Fixture loved line.",
+    ]
+
+
+def test_cli_query_text_includes_attribution_when_requested(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--attribution"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "toy John 3:16",
+        "License: https://example.invalid/license",
+        "John 3:16 Fixture loved line.",
     ]
 
 
@@ -107,6 +176,15 @@ def test_cli_query_rejects_json_and_usfm_together(tmp_path: Path) -> None:
         main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--json", "--usfm"])
 
     assert exc_info.value.code == 2
+
+
+@pytest.mark.parametrize("command", ["query", "compare"])
+def test_cli_local_export_help_mentions_attribution(command: str, capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        main([command, "--help"])
+
+    assert exc_info.value.code == 0
+    assert "--attribution" in capsys.readouterr().out
 
 
 @pytest.mark.parametrize("other_flag", ["--json", "--usfm"])
@@ -400,6 +478,38 @@ def test_cli_compare_json_aligns_multiple_local_translations(
     }
 
 
+def test_cli_compare_json_includes_per_translation_attribution_when_requested(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--json", "--attribution"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["translations"][0]["attribution"] == {
+        "license_url": "https://example.invalid/license",
+    }
+    assert payload["translations"][1]["attribution"] == {
+        "license_url": "https://example.invalid/license",
+        "source_url": "https://mirror.example.invalid/alternate.json",
+    }
+
+
+def test_cli_compare_json_without_attribution_preserves_existing_shape(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--json"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "attribution" not in payload["translations"][0]
+
+
 def test_cli_compare_text_prints_translation_labels(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
     seed_second_translation(tmp_path)
@@ -413,6 +523,46 @@ def test_cli_compare_text_prints_translation_labels(tmp_path: Path, capsys: pyte
         "John 3:16 Fixture loved line.",
         "[alt] Alternate Fixture Translation",
         "John 3:16 Alternate loved line.",
+    ]
+
+
+def test_cli_compare_csv_includes_stable_attribution_columns_when_requested(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    seed_second_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "compare", "John 3:16", "toy", "alt", "--csv", "--attribution"])
+
+    assert code == 0
+    assert list(csv.reader(io.StringIO(capsys.readouterr().out))) == [
+        [
+            "reference",
+            "translation_id",
+            "translation_name",
+            "license_url",
+            "source_url",
+            "verse_reference",
+            "text",
+        ],
+        [
+            "John 3:16",
+            "toy",
+            "Toy Test Translation",
+            "https://example.invalid/license",
+            "",
+            "John 3:16",
+            "Fixture loved line.",
+        ],
+        [
+            "John 3:16",
+            "alt",
+            "Alternate Fixture Translation",
+            "https://example.invalid/license",
+            "https://mirror.example.invalid/alternate.json",
+            "John 3:16",
+            "Alternate loved line.",
+        ],
     ]
 
 

@@ -70,6 +70,7 @@ def build_parser() -> argparse.ArgumentParser:
     query_output.add_argument("--json", action="store_true")
     query_output.add_argument("--markdown", action="store_true", help="Output note-friendly Markdown.")
     query_output.add_argument("--usfm", action="store_true", help="Output minimal USFM-like text.")
+    query.add_argument("--attribution", action="store_true", help="Include local translation license/source metadata.")
     query.set_defaults(func=_query)
 
     compare = subparsers.add_parser("compare", parents=[common], help="Compare a passage across local translations.")
@@ -79,6 +80,7 @@ def build_parser() -> argparse.ArgumentParser:
     compare_output.add_argument("--json", action="store_true")
     compare_output.add_argument("--markdown", action="store_true")
     compare_output.add_argument("--csv", action="store_true")
+    compare.add_argument("--attribution", action="store_true", help="Include per-translation license/source metadata.")
     compare.set_defaults(func=_compare)
 
     live = subparsers.add_parser("live", parents=[common], help="Query bible-api.com without local data.")
@@ -168,13 +170,16 @@ def _query(args: argparse.Namespace) -> int:
     translation = Store(args.data_dir).load_translation(args.translation_id)
     result = query_passage(translation, args.reference)
     if args.json:
-        _print_json(result.to_dict())
+        _print_json(result.to_dict(include_attribution=args.attribution))
     elif args.markdown:
-        print(render_markdown(result))
+        print(render_markdown(result, include_attribution=args.attribution))
     elif args.usfm:
-        print(render_usfm(result))
+        print(render_usfm(result, include_attribution=args.attribution))
     else:
         print(f"{result.translation_id} {result.normalized_reference}")
+        if args.attribution:
+            for line in _attribution_lines(result.attribution):
+                print(line)
         for verse in result.verses:
             print(f"{verse.reference} {verse.text}")
     return 0
@@ -194,23 +199,21 @@ def _compare(args: argparse.Namespace) -> int:
             {
                 "reference": reference,
                 "translations": [
-                    {
-                        "translation_id": result.translation_id,
-                        "translation_name": result.translation_name,
-                        "verses": [verse.__dict__ for verse in result.verses],
-                    }
-                    for result in results
+                    _compare_result_dict(result, include_attribution=args.attribution) for result in results
                 ],
             }
         )
     elif args.markdown:
-        print(_render_compare_markdown(reference, results))
+        print(_render_compare_markdown(reference, results, include_attribution=args.attribution))
     elif args.csv:
-        sys.stdout.write(_render_compare_csv(reference, results))
+        sys.stdout.write(_render_compare_csv(reference, results, include_attribution=args.attribution))
     else:
         print(reference)
         for result in results:
             print(f"[{result.translation_id}] {result.translation_name}")
+            if args.attribution:
+                for line in _attribution_lines(result.attribution):
+                    print(line)
             for verse in result.verses:
                 print(f"{verse.reference} {verse.text}")
     return 0
@@ -293,7 +296,20 @@ def _filter_translations(rows: list[dict[str, Any]], query: str | None, language
     return filtered
 
 
-def _render_compare_markdown(reference: str, results: Sequence[PassageResult]) -> str:
+def _compare_result_dict(result: PassageResult, *, include_attribution: bool = False) -> dict[str, Any]:
+    payload = {
+        "translation_id": result.translation_id,
+        "translation_name": result.translation_name,
+        "verses": [verse.__dict__ for verse in result.verses],
+    }
+    if include_attribution and result.attribution:
+        payload["attribution"] = result.attribution
+    return payload
+
+
+def _render_compare_markdown(
+    reference: str, results: Sequence[PassageResult], *, include_attribution: bool = False
+) -> str:
     lines = [f"# {_markdown_text(reference)}"]
     for result in results:
         lines.extend(
@@ -303,6 +319,10 @@ def _render_compare_markdown(reference: str, results: Sequence[PassageResult]) -
                 "",
             ]
         )
+        if include_attribution:
+            lines.extend(f"> {_markdown_text(line)}" for line in _attribution_lines(result.attribution))
+            if result.attribution:
+                lines.append("")
         for verse in result.verses:
             lines.append(f"- **{_markdown_text(verse.reference)}** {_markdown_text(verse.text)}")
     return "\n".join(lines)
@@ -415,14 +435,42 @@ def _live_text(value: Any) -> str:
     return str(value)
 
 
-def _render_compare_csv(reference: str, results: Sequence[PassageResult]) -> str:
+def _render_compare_csv(reference: str, results: Sequence[PassageResult], *, include_attribution: bool = False) -> str:
     output = io.StringIO(newline="")
     writer = csv.writer(output)
-    writer.writerow(["reference", "translation_id", "translation_name", "verse_reference", "text"])
+    if include_attribution:
+        writer.writerow(
+            ["reference", "translation_id", "translation_name", "license_url", "source_url", "verse_reference", "text"]
+        )
+    else:
+        writer.writerow(["reference", "translation_id", "translation_name", "verse_reference", "text"])
     for result in results:
         for verse in result.verses:
-            writer.writerow([reference, result.translation_id, result.translation_name, verse.reference, verse.text])
+            if include_attribution:
+                writer.writerow(
+                    [
+                        reference,
+                        result.translation_id,
+                        result.translation_name,
+                        result.attribution.get("license_url", ""),
+                        result.attribution.get("source_url", ""),
+                        verse.reference,
+                        verse.text,
+                    ]
+                )
+            else:
+                writer.writerow(
+                    [reference, result.translation_id, result.translation_name, verse.reference, verse.text]
+                )
     return output.getvalue()
+
+
+def _attribution_lines(attribution: dict[str, str]) -> list[str]:
+    labels = {
+        "license_url": "License",
+        "source_url": "Source",
+    }
+    return [f"{labels[key]}: {attribution[key]}" for key in ("license_url", "source_url") if key in attribution]
 
 
 def _markdown_text(value: str) -> str:

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from bible_skill.books import BY_ID, Book
@@ -23,21 +23,27 @@ class PassageResult:
     translation_name: str
     normalized_reference: str
     verses: list[VerseResult]
+    attribution: dict[str, str] = field(default_factory=dict)
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
+    def to_dict(self, *, include_attribution: bool = False) -> dict[str, Any]:
+        payload = {
             "translation_id": self.translation_id,
             "translation_name": self.translation_name,
             "reference": self.normalized_reference,
             "verses": [verse.__dict__ for verse in self.verses],
         }
+        if include_attribution and self.attribution:
+            payload["attribution"] = self.attribution
+        return payload
 
 
-def render_usfm(passage: PassageResult) -> str:
+def render_usfm(passage: PassageResult, *, include_attribution: bool = False) -> str:
     lines = [
         rf"\id {_usfm_text(passage.translation_id)}",
         rf"\h {_usfm_text(passage.translation_name)}",
     ]
+    if include_attribution:
+        lines.extend(rf"\rem {_usfm_text(line)}" for line in _attribution_lines(passage.attribution))
     current_chapter: int | None = None
     for verse in passage.verses:
         chapter, verse_number = _reference_chapter_verse(verse.reference)
@@ -48,8 +54,12 @@ def render_usfm(passage: PassageResult) -> str:
     return "\n".join(lines)
 
 
-def render_markdown(passage: PassageResult) -> str:
+def render_markdown(passage: PassageResult, *, include_attribution: bool = False) -> str:
     lines = [f"# {_markdown_text(passage.normalized_reference)} ({_markdown_text(passage.translation_id)})", ""]
+    if include_attribution:
+        lines.extend(f"> {_markdown_text(line)}" for line in _attribution_lines(passage.attribution))
+        if passage.attribution:
+            lines.append("")
     for verse in passage.verses:
         lines.append(f"- **{_markdown_text(verse.reference)}** {_markdown_text(verse.text)}")
     return "\n".join(lines)
@@ -80,6 +90,7 @@ def query_passage(translation: dict[str, Any], raw_reference: str) -> PassageRes
         translation_name=metadata.get("name", metadata.get("id", "unknown")),
         normalized_reference=_format_range(reference.book, selected),
         verses=verses,
+        attribution=_translation_attribution(metadata),
     )
 
 
@@ -217,6 +228,20 @@ def _require_verse(book: dict[int, dict[int, str]], chapter: int, verse: int) ->
 
 def _format_verse(book: Book, chapter: int, verse: int) -> str:
     return f"{book.name} {chapter}:{verse}"
+
+
+def _translation_attribution(metadata: dict[str, Any]) -> dict[str, str]:
+    return {
+        key: value for key in ("license_url", "source_url") if isinstance((value := metadata.get(key)), str) and value
+    }
+
+
+def _attribution_lines(attribution: dict[str, str]) -> list[str]:
+    labels = {
+        "license_url": "License",
+        "source_url": "Source",
+    }
+    return [f"{labels[key]}: {attribution[key]}" for key in ("license_url", "source_url") if key in attribution]
 
 
 def _format_range(book: Book, selected: list[tuple[int, int, str]]) -> str:
