@@ -19,7 +19,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Search installed translation metadata locally by id, name, language, license URL, or source URL.
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
 - Extract Bible references from arbitrary notes, sermons, or Markdown using the same local parser and book data.
-- Export local query results as minimal deterministic USFM-like text.
+- Export local query results as note-friendly Markdown or minimal deterministic USFM-like text.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output and configurable timeout/retry settings.
 - Report live provider HTTP failures with useful provider messages, compact body excerpts, and `Retry-After` backoff hints when available.
@@ -56,6 +56,7 @@ bible-skill search english --data-dir ./data
 bible-skill search license.example --data-dir ./data --json
 bible-skill query web "John 3:16" --data-dir ./data
 bible-skill query web "JHN 3:16-4:2" --data-dir ./data --json
+bible-skill query web "JHN 3:16-4:2" --data-dir ./data --markdown
 bible-skill query web "JHN 3:16-4:2" --data-dir ./data --usfm
 bible-skill compare "John 3:16" web kjv --data-dir ./data --json
 bible-skill compare "John 3:16" web kjv --data-dir ./data --markdown
@@ -93,6 +94,8 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, license URL when the provider supplies it, and a deterministic `sha256:` checksum calculated from normalized translation content without the fetched timestamp. The `validate` command checks installed cache files before agents rely on them; pass optional translation IDs to validate only those caches, or omit IDs to validate every installed translation. Text output is tab-separated and concise, while `--json` emits objects with `translation_id`, `ok`, `checksum`, and `issues`. Validation exits non-zero if any requested cache is missing or invalid. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
+Local `query` supports text output by default, `--json` for machine-readable passage objects, `--markdown` for note-friendly output headed with the normalized reference and translation id, and `--usfm` for minimal deterministic USFM-like text. `--json`, `--markdown`, and `--usfm` are mutually exclusive.
+
 The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Use `--timeout SECONDS` to change the provider request timeout from the default 30 seconds, and `--retries COUNT` to retry transient network errors or transient HTTP responses such as 408, 429, and 5xx responses. The default retry count is 0, so existing single-attempt behavior is preserved unless retries are requested. Semantic provider responses such as 404/no passage found are not retried. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
 
 ## Data and licensing
@@ -114,10 +117,12 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum validation, USFM export and comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior and error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum validation, local Markdown and USFM export, comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior and error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
+- Add optional local passage export metadata for translation license and source attribution.
+- Improve installer guidance for offline/local-only agent environments.
 - Prepare a packaged release after manual registry verification.
 
 ## Contributing

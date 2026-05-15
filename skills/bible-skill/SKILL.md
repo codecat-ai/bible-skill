@@ -8,6 +8,7 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 - Validate installed translation cache files: `bible-skill validate --data-dir DATA_DIR`
 - Search installed translation metadata: `bible-skill search QUERY --data-dir DATA_DIR`
 - Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR`
+- Export an exact local passage as Markdown for notes: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR --markdown`
 - Export an exact local passage as minimal USFM-like text: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR --usfm`
 - Compare an exact passage across local translations: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir DATA_DIR`
 - Export a comparison as Markdown for notes or agent context: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir DATA_DIR --markdown`

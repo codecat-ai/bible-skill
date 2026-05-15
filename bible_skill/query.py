@@ -48,6 +48,13 @@ def render_usfm(passage: PassageResult) -> str:
     return "\n".join(lines)
 
 
+def render_markdown(passage: PassageResult) -> str:
+    lines = [f"# {_markdown_text(passage.normalized_reference)} ({_markdown_text(passage.translation_id)})", ""]
+    for verse in passage.verses:
+        lines.append(f"- **{_markdown_text(verse.reference)}** {_markdown_text(verse.text)}")
+    return "\n".join(lines)
+
+
 def query_passage(translation: dict[str, Any], raw_reference: str) -> PassageResult:
     try:
         reference = parse_reference(raw_reference)
@@ -230,3 +237,11 @@ def _reference_chapter_verse(reference: str) -> tuple[int, int]:
 
 def _usfm_text(value: str) -> str:
     return " ".join(str(value).replace("\\", "/").split())
+
+
+def _markdown_text(value: str) -> str:
+    text = " ".join(str(value).split())
+    escaped = text.replace("\\", "\\\\")
+    for char in ("`", "*", "_", "[", "]", "#", "|", "<", ">"):
+        escaped = escaped.replace(char, f"\\{char}")
+    return escaped.replace("- ", "\\- ")

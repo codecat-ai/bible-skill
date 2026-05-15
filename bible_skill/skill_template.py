@@ -14,6 +14,8 @@ def render_skill(data_dir: str) -> str:
         f"- Validate installed translation cache files: `bible-skill validate --data-dir {data_dir}`",
         f"- Search installed translation metadata: `bible-skill search QUERY --data-dir {data_dir}`",
         f"- Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir}`",
+        "- Export an exact local passage as Markdown for notes: "
+        f"`bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir} --markdown`",
         "- Export an exact local passage as minimal USFM-like text: "
         f"`bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir} --usfm`",
         "- Compare an exact passage across local translations: "

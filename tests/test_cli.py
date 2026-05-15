@@ -70,11 +70,51 @@ def test_cli_query_usfm_outputs_minimal_passage(tmp_path: Path, capsys: pytest.C
     ]
 
 
+def test_cli_query_markdown_outputs_note_friendly_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16-17", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16-17 (toy)",
+        "",
+        "- **John 3:16** Fixture loved line.",
+        "- **John 3:17** Fixture sent line.",
+    ]
+
+
+def test_cli_query_markdown_escapes_sensitive_text(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    data = tiny_translation()
+    data["metadata"]["id"] = "md"
+    data["books"][1]["chapters"][0]["verses"][0]["text"] = "Text with *stars*, [link], <tag>"
+    Store(tmp_path).save_translation("md", data)
+
+    code = main(["--data-dir", str(tmp_path), "query", "md", "John 3:16", "--markdown"])
+
+    assert code == 0
+    assert capsys.readouterr().out.splitlines() == [
+        "# John 3:16 (md)",
+        "",
+        "- **John 3:16** Text with \\*stars\\*, \\[link\\], \\<tag\\>",
+    ]
+
+
 def test_cli_query_rejects_json_and_usfm_together(tmp_path: Path) -> None:
     seed_translation(tmp_path)
 
     with pytest.raises(SystemExit) as exc_info:
         main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--json", "--usfm"])
+
+    assert exc_info.value.code == 2
+
+
+@pytest.mark.parametrize("other_flag", ["--json", "--usfm"])
+def test_cli_query_rejects_markdown_with_other_output_modes(tmp_path: Path, other_flag: str) -> None:
+    seed_translation(tmp_path)
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["--data-dir", str(tmp_path), "query", "toy", "John 3:16", "--markdown", other_flag])
 
     assert exc_info.value.code == 2
 
