@@ -10,9 +10,11 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 - Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR`
 - Export an exact local passage as Markdown for notes: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR --markdown`
 - Export an exact local passage as minimal USFM-like text: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR --usfm`
+- Include local translation license/source metadata in exported local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir DATA_DIR --markdown --attribution`
 - Compare an exact passage across local translations: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir DATA_DIR`
 - Export a comparison as Markdown for notes or agent context: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir DATA_DIR --markdown`
 - Export a comparison as CSV for spreadsheets: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir DATA_DIR --csv`
+- Include per-translation license/source metadata in local comparisons: `bible-skill compare REFERENCE TRANSLATION_ID OTHER_TRANSLATION_ID --data-dir DATA_DIR --csv --attribution`
 - Extract references from notes or sermons: `bible-skill extract --text "See John 3:16 and Romans 8:28-30"`
 - Extract references from a local Markdown file as JSON: `bible-skill extract --file notes.md --json`
 - Export extracted references from a local Markdown file as Markdown: `bible-skill extract --file notes.md --markdown`
@@ -27,6 +29,7 @@ Use installed local translation data first for exact Scripture lookup. Do not qu
 ## Operating Rules
 
 Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact wording from the tool output. Respect translation metadata and license URLs.
+Use local `--attribution` when outputs need translation license or source URLs.
 Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local translations in automated workflows; use `--json` when callers need machine-readable issue lists.
 Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, `content`, `verse_text`, or nested mixed fragments.
 Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls; semantic provider responses such as 404/no passage found are not retried.
