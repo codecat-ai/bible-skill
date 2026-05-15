@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from bible_skill import query
 from bible_skill.query import QueryError, query_passage, render_usfm
 from tests.fixtures import tiny_translation
 
@@ -98,6 +99,30 @@ def test_render_usfm_normalizes_unsafe_verse_text() -> None:
         r"\h Toy Test Translation",
         r"\c 3",
         r"\v 16 First/id bad second /v marker text.",
+    ]
+
+
+def test_render_markdown_exports_note_friendly_passage() -> None:
+    result = query_passage(tiny_translation(), "John 3:16-17")
+
+    assert query.render_markdown(result).splitlines() == [
+        "# John 3:16-17 (toy)",
+        "",
+        "- **John 3:16** Fixture loved line.",
+        "- **John 3:17** Fixture sent line.",
+    ]
+
+
+def test_render_markdown_escapes_sensitive_verse_text() -> None:
+    translation = tiny_translation()
+    translation["metadata"]["id"] = "md"
+    translation["books"][1]["chapters"][0]["verses"][0]["text"] = "Text with *stars*, [link], <tag>\n- accidental list."
+    result = query_passage(translation, "John 3:16")
+
+    assert query.render_markdown(result).splitlines() == [
+        "# John 3:16 (md)",
+        "",
+        "- **John 3:16** Text with \\*stars\\*, \\[link\\], \\<tag\\> \\- accidental list.",
     ]
 
 
