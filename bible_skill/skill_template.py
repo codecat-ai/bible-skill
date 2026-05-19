@@ -44,6 +44,22 @@ def render_skill(data_dir: str) -> str:
         "- Export a live fallback passage as CSV for spreadsheets: "
         '`bible-skill live "John 3:16" --translation web --csv`',
         "",
+        "## Offline Source-Checkout Setup",
+        "",
+        "Use this skill from a trusted source checkout; it is not a package-registry install path.",
+        "Create and activate a local virtual environment in the checkout, then install the checkout in editable mode "
+        "with development dependencies:",
+        "",
+        "- `python -m venv .venv`",
+        "- `source .venv/bin/activate`",
+        "- `uv pip install -e '.[dev]'`",
+        f"- `bible-skill validate --data-dir {data_dir}`",
+        f"- `bible-skill skill --data-dir {data_dir} > skills/bible-skill/SKILL.md`",
+        "",
+        "Point the agent at the generated SKILL.md and keep the same `--data-dir` in every local lookup command. "
+        "Validate the local data directory before use, prefer installed translations, and disable live fallback unless "
+        "the task explicitly permits network use.",
+        "",
         "## Operating Rules",
         "",
         "Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact "

@@ -38,11 +38,32 @@ python -m bible_skill.cli --help
 For local command entry point testing from a checkout, install this checkout in editable mode in your own virtual environment:
 
 ```sh
-python -m pip install -e .
+python -m venv .venv
+source .venv/bin/activate
+uv pip install -e '.[dev]'
 bible-skill --help
 ```
 
 Do not use `pip install bible-skill`, `uvx bible-skill`, or similar registry commands; no registry release is available yet.
+
+## Offline/local-only agent setup
+
+Use a trusted source checkout for offline/local-only agent work. Prepare or refresh allowed local translation data while network use is permitted, then validate that data before giving it to an agent:
+
+```sh
+git clone https://github.com/codecat-ai/bible-skill.git
+cd bible-skill
+python -m venv .venv
+source .venv/bin/activate
+uv pip install -e '.[dev]'
+bible-skill translations --query web
+bible-skill download web --data-dir ./data
+bible-skill validate --data-dir ./data
+bible-skill installed --data-dir ./data
+bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
+```
+
+Point the agent at the generated `skills/bible-skill/SKILL.md` and keep `--data-dir ./data` in local lookup commands. Prefer installed translations, and preserve returned wording, normalized references, translation IDs, and attribution metadata. Disable live fallback unless a task explicitly permits network use.
 
 ## Quick start
 
@@ -128,8 +149,8 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 Current roadmap focus:
 
 - Improve live provider resilience and document bounded retry/error behavior.
-- Expand offline/local-only agent setup guidance using source-checkout workflows only.
 - Tighten cache/import validation before agents rely on installed local passages.
+- Review cache portability across operating systems and scripted automation contexts.
 - Prepare packaged release readiness checks without claiming any registry install path before manual verification.
 
 ## Contributing
