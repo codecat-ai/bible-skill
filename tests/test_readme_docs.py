@@ -16,6 +16,7 @@ def test_english_readme_documents_source_checkout_offline_agent_setup() -> None:
     assert "python -m venv .venv" in text
     assert "uv pip install -e '.[dev]'" in text
     assert "bible-skill validate --data-dir ./data" in text
+    assert "bible-skill cache manifest --data-dir ./data --json" in text
     assert "bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md" in text
     assert "Point the agent at the generated `skills/bible-skill/SKILL.md`" in text
     assert "Disable live fallback unless a task explicitly permits network use." in text
@@ -30,6 +31,7 @@ def test_translated_readmes_document_matching_offline_agent_setup() -> None:
         assert "python -m venv .venv" in text
         assert "uv pip install -e '.[dev]'" in text
         assert "bible-skill validate --data-dir ./data" in text
+        assert "bible-skill cache manifest --data-dir ./data --json" in text
         assert "bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md" in text
         assert "pip install bible-skill" in text
         assert "uvx bible-skill" in text

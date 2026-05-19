@@ -12,6 +12,7 @@ def render_skill(data_dir: str) -> str:
         "",
         f"- List installed translations: `bible-skill installed --data-dir {data_dir}`",
         f"- Validate installed translation cache files: `bible-skill validate --data-dir {data_dir}`",
+        f"- Inspect a portable local cache manifest: `bible-skill cache manifest --data-dir {data_dir} --json`",
         f"- Search installed translation metadata: `bible-skill search QUERY --data-dir {data_dir}`",
         f"- Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir}`",
         "- Export an exact local passage as Markdown for notes: "
@@ -65,6 +66,8 @@ def render_skill(data_dir: str) -> str:
         "Prefer local installed data, cite the returned normalized reference and translation id, and preserve exact "
         "wording from the tool output. Respect translation metadata and license URLs.",
         "Use local `--attribution` when outputs need translation license or source URLs.",
+        "Use `bible-skill cache manifest --json` before transferring a cache between machines; re-run "
+        "`bible-skill validate` after transfer and treat manifest `issues` as automation failure signals.",
         "Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local translations in automated "
         "workflows; use `--json` when callers need machine-readable issue lists.",
         "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "

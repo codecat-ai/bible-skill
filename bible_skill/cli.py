@@ -58,6 +58,14 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--json", action="store_true", help="Output JSON.")
     validate.set_defaults(func=_validate)
 
+    cache = subparsers.add_parser("cache", parents=[common], help="Inspect local translation cache data.")
+    cache_subparsers = cache.add_subparsers(dest="cache_command", required=True)
+    cache_manifest = cache_subparsers.add_parser(
+        "manifest", parents=[common], help="Inspect a portable local cache manifest."
+    )
+    cache_manifest.add_argument("--json", action="store_true", help="Output JSON.")
+    cache_manifest.set_defaults(func=_cache_manifest)
+
     search = subparsers.add_parser("search", parents=[common], help="Search installed translation metadata.")
     search.add_argument("query")
     search.add_argument("--json", action="store_true")
@@ -154,6 +162,15 @@ def _validate(args: argparse.Namespace) -> int:
             issue_text = "" if result.ok else "\t" + "; ".join(result.issues)
             print(f"{result.translation_id}\t{status}\t{result.checksum}{issue_text}")
     return 0 if all(result.ok for result in results) else 2
+
+
+def _cache_manifest(args: argparse.Namespace) -> int:
+    manifest = Store(args.data_dir).cache_manifest()
+    if args.json:
+        _print_json(manifest)
+    else:
+        print(_render_cache_manifest_text(manifest))
+    return 0
 
 
 def _search(args: argparse.Namespace) -> int:
@@ -383,6 +400,19 @@ def _render_extract_csv(text: str, rows: Sequence[ExtractedReference]) -> str:
             ]
         )
     return output.getvalue()
+
+
+def _render_cache_manifest_text(manifest: dict[str, Any]) -> str:
+    lines = [f"Cache manifest for {manifest['data_dir']}"]
+    translations = manifest["translations"]
+    if not translations:
+        lines.append("No cached translations found.")
+        return "\n".join(lines)
+    for row in translations:
+        status = "ok" if row["validation_ok"] else "invalid"
+        detail = row["checksum"] if row["validation_ok"] else "; ".join(row["issues"])
+        lines.append(f"{row['id']}\t{status}\t{row['relative_path']}\t{detail}")
+    return "\n".join(lines)
 
 
 def _render_live_csv(payload: dict[str, Any], requested_reference: str) -> str:

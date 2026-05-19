@@ -8,17 +8,17 @@ The previous roadmap item to expand offline/local-only agent setup guidance usin
 
 The previous roadmap item to add optional local passage export metadata for translation license and source attribution is complete. Local `query` and `compare` exports now support `--attribution`, and the documentation describes the resulting `license_url` and `source_url` behavior.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider resilience needs more hardening, cache import and validation paths can be stricter, cache portability needs review across automation contexts, and release packaging should not be advertised until it has been manually verified.
+The previous roadmap item to review cache portability across operating systems and scripted automation contexts is complete. `Store.cache_manifest()` and `bible-skill cache manifest --json` now expose a deterministic, JSON-serializable cache inspection manifest with POSIX-style relative paths, validation status, issue lists for missing or corrupt caches, and documentation examples for transfer, revalidation, and agent failure handling without packaging or registry claims.
+
+The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider resilience needs more hardening, cache import and validation paths can be stricter, and release packaging should not be advertised until it has been manually verified.
 
 ## Now
 
 - Improve live provider resilience with clearer retry guidance, failure fixtures, and documented behavior for transient HTTP and network errors.
 - Tighten cache/import validation so agents can detect missing metadata, malformed content, and checksum drift before relying on local passages.
-- Review cache portability across operating systems and scripted automation contexts.
 
 ## Next
 
-- Add practical examples for cache transfer, revalidation, and failure handling in agent environments.
 - Prepare packaged release readiness checks without publishing or documenting registry install commands before verification.
 
 ## Later
