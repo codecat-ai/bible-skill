@@ -123,3 +123,73 @@ def test_store_validation_reports_missing_requested_translation(tmp_path: Path) 
     assert result.ok is False
     assert result.checksum == ""
     assert result.issues == ["translation cache is missing"]
+
+
+def test_store_cache_manifest_reports_portable_translation_entries(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+
+    manifest = store.cache_manifest(generated_at="2026-05-20T00:00:00+00:00")
+
+    assert manifest == {
+        "schema_version": 1,
+        "generated_at": "2026-05-20T00:00:00+00:00",
+        "data_dir": str(tmp_path),
+        "translations": [
+            {
+                "id": "toy",
+                "name": "Toy Test Translation",
+                "language": "en",
+                "license_url": "https://example.invalid/license",
+                "source_url": "",
+                "book_count": 3,
+                "chapter_count": 4,
+                "verse_count": 8,
+                "checksum": store.load_translation("toy")["metadata"]["checksum"],
+                "relative_path": "translations/toy/translation.json",
+                "validation_ok": True,
+                "issues": [],
+            }
+        ],
+    }
+
+
+def test_store_cache_manifest_reports_corrupt_entries_without_crashing(tmp_path: Path) -> None:
+    broken = tmp_path / "translations" / "broken"
+    missing = tmp_path / "translations" / "missing"
+    broken.mkdir(parents=True)
+    missing.mkdir(parents=True)
+    (broken / "translation.json").write_text("{", encoding="utf-8")
+
+    manifest = Store(tmp_path).cache_manifest(generated_at="2026-05-20T00:00:00+00:00")
+
+    assert manifest["translations"] == [
+        {
+            "id": "broken",
+            "name": "",
+            "language": "",
+            "license_url": "",
+            "source_url": "",
+            "book_count": 0,
+            "chapter_count": 0,
+            "verse_count": 0,
+            "checksum": "",
+            "relative_path": "translations/broken/translation.json",
+            "validation_ok": False,
+            "issues": ["translation.json is invalid JSON: Expecting property name enclosed in double quotes"],
+        },
+        {
+            "id": "missing",
+            "name": "",
+            "language": "",
+            "license_url": "",
+            "source_url": "",
+            "book_count": 0,
+            "chapter_count": 0,
+            "verse_count": 0,
+            "checksum": "",
+            "relative_path": "translations/missing/translation.json",
+            "validation_ok": False,
+            "issues": ["translation cache is missing"],
+        },
+    ]

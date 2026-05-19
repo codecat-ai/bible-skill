@@ -285,6 +285,44 @@ def test_cli_validate_without_ids_reports_broken_cache_file(tmp_path: Path, caps
     ]
 
 
+def test_cli_cache_manifest_json_writes_manifest_to_stdout_only(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+
+    code = main(["--data-dir", str(tmp_path), "cache", "manifest", "--json"])
+
+    assert code == 0
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert captured.err == ""
+    assert payload["schema_version"] == 1
+    assert payload["data_dir"] == str(tmp_path)
+    assert payload["translations"][0]["id"] == "toy"
+    assert payload["translations"][0]["relative_path"] == "translations/toy/translation.json"
+    assert payload["translations"][0]["validation_ok"] is True
+
+
+def test_cli_cache_manifest_text_summarizes_valid_and_invalid_entries(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    path = tmp_path / "translations" / "broken"
+    path.mkdir(parents=True)
+    (path / "translation.json").write_text("{", encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "cache", "manifest"])
+
+    assert code == 0
+    output = capsys.readouterr().out.splitlines()
+    assert output[0] == f"Cache manifest for {tmp_path}"
+    assert output[1] == (
+        "broken\tinvalid\ttranslations/broken/translation.json\t"
+        "translation.json is invalid JSON: Expecting property name enclosed in double quotes"
+    )
+    assert output[2].startswith("toy\tok\ttranslations/toy/translation.json\tsha256:")
+
+
 def test_cli_search_text_outputs_local_metadata_matches(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
     seed_second_translation(tmp_path)

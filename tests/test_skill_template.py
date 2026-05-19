@@ -9,6 +9,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "Use installed local translation data first" in text
     assert "bible-skill installed --data-dir ./example-data" in text
     assert "bible-skill validate --data-dir ./example-data" in text
+    assert "bible-skill cache manifest --data-dir ./example-data --json" in text
     assert "bible-skill search QUERY --data-dir ./example-data" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data" in text
     assert "bible-skill query TRANSLATION_ID REFERENCE --data-dir ./example-data --markdown" in text
@@ -37,6 +38,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "`content`, `verse_text`, or nested mixed fragments" in text
     assert "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls" in text
     assert "Use local `--attribution` when outputs need translation license or source URLs." in text
+    assert "Use `bible-skill cache manifest --json` before transferring a cache between machines" in text
 
 
 def test_skill_export_mentions_source_checkout_offline_setup() -> None:

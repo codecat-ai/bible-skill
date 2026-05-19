@@ -158,8 +158,24 @@ class Store:
         result_id = str(normalized["metadata"].get("id") or translation_id)
         return ValidationResult(translation_id=result_id, ok=not issues, checksum=checksum, issues=issues)
 
+    def cache_manifest(self, generated_at: str | datetime | None = None) -> dict[str, Any]:
+        timestamp = generated_at or datetime.now(UTC).replace(microsecond=0)
+        if isinstance(timestamp, datetime):
+            timestamp = timestamp.isoformat()
+        return {
+            "schema_version": 1,
+            "generated_at": timestamp,
+            "data_dir": str(self.data_dir),
+            "translations": [self._manifest_entry_for(path.name) for path in self._translation_dirs()],
+        }
+
     def _translation_dir(self, translation_id: str) -> Path:
         return self.translations_dir / translation_id.lower()
+
+    def _translation_dirs(self) -> list[Path]:
+        if not self.translations_dir.exists():
+            return []
+        return [path for path in sorted(self.translations_dir.iterdir()) if path.is_dir()]
 
     def _record_for(self, translation_id: str) -> InstalledTranslation:
         data = self.load_translation(translation_id)
@@ -178,6 +194,54 @@ class Store:
             chapter_count=chapter_count,
             verse_count=verse_count,
         )
+
+    def _manifest_entry_for(self, translation_id: str) -> dict[str, Any]:
+        path = self._translation_dir(translation_id) / "translation.json"
+        data: dict[str, Any] = {}
+        issues: list[str] = []
+        try:
+            validation = self.validate_translation(translation_id)
+        except (TypeError, ValueError, KeyError, AttributeError) as exc:
+            validation = ValidationResult(
+                translation_id=translation_id,
+                ok=False,
+                checksum="",
+                issues=[f"translation cache validation failed: {exc}"],
+            )
+        try:
+            if path.exists():
+                parsed = json.loads(path.read_text(encoding="utf-8"))
+                if isinstance(parsed, dict):
+                    data = parsed
+        except json.JSONDecodeError:
+            pass
+        except OSError as exc:
+            issues.append(f"translation.json could not be read: {exc}")
+
+        if issues:
+            validation = ValidationResult(
+                translation_id=validation.translation_id,
+                ok=False,
+                checksum=validation.checksum,
+                issues=[*validation.issues, *issues],
+            )
+
+        metadata = data.get("metadata") if isinstance(data.get("metadata"), dict) else {}
+        counts = _translation_counts(data)
+        return {
+            "id": str(metadata.get("id") or validation.translation_id or translation_id),
+            "name": str(metadata.get("name") or ""),
+            "language": str(metadata.get("language") or ""),
+            "license_url": str(metadata.get("license_url") or metadata.get("licenseUrl") or ""),
+            "source_url": str(metadata.get("source_url") or ""),
+            "book_count": counts["book_count"],
+            "chapter_count": counts["chapter_count"],
+            "verse_count": counts["verse_count"],
+            "checksum": validation.checksum,
+            "relative_path": (Path("translations") / translation_id / "translation.json").as_posix(),
+            "validation_ok": validation.ok,
+            "issues": validation.issues,
+        }
 
 
 def default_data_dir() -> Path:
@@ -237,6 +301,18 @@ def _schema_issues(data: dict[str, Any]) -> list[str]:
                 _require_positive_int(verse, "number", f"{verse_path}.number", issues)
                 _require_non_empty_string(verse, "text", f"{verse_path}.text", issues)
     return issues
+
+
+def _translation_counts(data: dict[str, Any]) -> dict[str, int]:
+    try:
+        normalized = normalize_translation(data)
+    except (TypeError, ValueError, KeyError, AttributeError):
+        return {"book_count": 0, "chapter_count": 0, "verse_count": 0}
+    return {
+        "book_count": len(normalized["books"]),
+        "chapter_count": sum(len(chapters) for chapters in normalized["books"].values()),
+        "verse_count": sum(len(verses) for chapters in normalized["books"].values() for verses in chapters.values()),
+    }
 
 
 def _require_non_empty_string(data: dict[str, Any], key: str, path: str, issues: list[str]) -> None:
