@@ -4,20 +4,21 @@ Bible Skill is in the portfolio **growth** tier, with a target cadence of **1 fo
 
 ## Completion Review
 
+The previous roadmap item to expand offline/local-only agent setup guidance using source-checkout workflows only is complete. The generated skill text and English, Chinese, and Japanese READMEs now show a source checkout, local virtual environment, `uv pip install -e '.[dev]'`, local data directory validation, `bible-skill skill --data-dir ...`, and local-first agent usage without adding package-registry install claims.
+
 The previous roadmap item to add optional local passage export metadata for translation license and source attribution is complete. Local `query` and `compare` exports now support `--attribution`, and the documentation describes the resulting `license_url` and `source_url` behavior.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider resilience needs more hardening, offline/local-only agent setup should be easier to follow, cache import and validation paths can be stricter, and release packaging should not be advertised until it has been manually verified.
+The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider resilience needs more hardening, cache import and validation paths can be stricter, cache portability needs review across automation contexts, and release packaging should not be advertised until it has been manually verified.
 
 ## Now
 
 - Improve live provider resilience with clearer retry guidance, failure fixtures, and documented behavior for transient HTTP and network errors.
-- Expand offline/local-only agent setup guidance using source-checkout workflows only.
 - Tighten cache/import validation so agents can detect missing metadata, malformed content, and checksum drift before relying on local passages.
+- Review cache portability across operating systems and scripted automation contexts.
 
 ## Next
 
-- Add practical examples for local-only skill export and validation flows in agent environments.
-- Review cache portability across operating systems and scripted automation contexts.
+- Add practical examples for cache transfer, revalidation, and failure handling in agent environments.
 - Prepare packaged release readiness checks without publishing or documenting registry install commands before verification.
 
 ## Later
@@ -38,7 +39,7 @@ The project remains growth rather than maintenance because it is useful and test
 
 - Plan one focused session per week while the project is in growth.
 - Use each session to close one narrow documentation, validation, provider, or release-readiness gap.
-- Reclassify to maintenance only after offline setup guidance, cache validation, provider resilience, and release readiness are stable enough that most sessions are reactive rather than roadmap-driven.
+- Reclassify to maintenance only after cache validation, cache portability, provider resilience, and release readiness are stable enough that most sessions are reactive rather than roadmap-driven.
 
 ## Completion Review Rules
 

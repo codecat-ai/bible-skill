@@ -37,3 +37,18 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "`content`, `verse_text`, or nested mixed fragments" in text
     assert "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls" in text
     assert "Use local `--attribution` when outputs need translation license or source URLs." in text
+
+
+def test_skill_export_mentions_source_checkout_offline_setup() -> None:
+    text = render_skill("./example-data")
+
+    assert "## Offline Source-Checkout Setup" in text
+    assert "Use this skill from a trusted source checkout; it is not a package-registry install path." in text
+    assert "python -m venv .venv" in text
+    assert "uv pip install -e '.[dev]'" in text
+    assert "bible-skill validate --data-dir ./example-data" in text
+    assert "bible-skill skill --data-dir ./example-data" in text
+    assert "Point the agent at the generated SKILL.md" in text
+    assert "disable live fallback unless the task explicitly permits network use" in text
+    assert "pip install bible-skill" not in text
+    assert "uvx bible-skill" not in text
