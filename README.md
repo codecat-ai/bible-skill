@@ -123,9 +123,14 @@ The test suite covers reference parsing, local metadata search, local passage lo
 
 ## Roadmap
 
-- Add optional local passage export metadata for translation license and source attribution.
-- Improve installer guidance for offline/local-only agent environments.
-- Prepare a packaged release after manual registry verification.
+Bible Skill is tracked as a growth project with a cadence of 1 focused session/week. See [ROADMAP.md](ROADMAP.md) for the completion review, maintenance triggers, and cadence rules.
+
+Current roadmap focus:
+
+- Improve live provider resilience and document bounded retry/error behavior.
+- Expand offline/local-only agent setup guidance using source-checkout workflows only.
+- Tighten cache/import validation before agents rely on installed local passages.
+- Prepare packaged release readiness checks without claiming any registry install path before manual verification.
 
 ## Contributing
 
