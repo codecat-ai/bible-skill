@@ -15,7 +15,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Discover available translations from Free Use Bible API.
 - Download complete translations into a local data directory.
 - List installed translations with book, chapter, and verse counts.
-- Validate installed translation cache files for required metadata, book/chapter/verse structure, non-empty verse text, and deterministic checksums.
+- Validate installed translation cache files for required metadata, sidecar metadata consistency, book/chapter/verse structure, non-empty verse text, and deterministic checksums.
 - Inspect a portable cache manifest with translation metadata, POSIX-style relative paths, checksums, counts, and validation issues for transfer automation.
 - Search installed translation metadata locally by id, name, language, license URL, or source URL.
 - Query local passages by book, chapter, single verse, verse range, and same-book cross-chapter range.
@@ -118,9 +118,9 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 ## Configuration
 
-Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, license URL when the provider supplies it, and a deterministic `sha256:` checksum calculated from normalized translation content without the fetched timestamp. The `validate` command checks installed cache files before agents rely on them; pass optional translation IDs to validate only those caches, or omit IDs to validate every installed translation. Text output is tab-separated and concise, while `--json` emits objects with `translation_id`, `ok`, `checksum`, and `issues`. Validation exits non-zero if any requested cache is missing or invalid.
+Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, license URL when the provider supplies it, and a deterministic `sha256:` checksum calculated from normalized translation content without the fetched timestamp. The `validate` command checks installed `translation.json` files and their sidecar `metadata.json` files before agents rely on them; pass optional translation IDs to validate only those caches, or omit IDs to validate every installed translation. It reports missing or malformed sidecar metadata, sidecar checksum drift, and mismatches between sidecar metadata and translation metadata. Text output is tab-separated and concise, while `--json` emits objects with `translation_id`, `ok`, `checksum`, and `issues`. Validation exits non-zero if any requested cache is missing or invalid.
 
-Use `bible-skill cache manifest --data-dir ./data --json` before transferring a local cache between machines or agent workspaces. The manifest is an inspection aid, not a package or registry claim: it reports `schema_version`, `generated_at`, `data_dir`, and one entry per cache directory with id, name, language, license/source URLs, book/chapter/verse counts, checksum, POSIX-style `relative_path`, `validation_ok`, and `issues`. Automation can copy the data directory, compare the manifest before and after transfer, then run `bible-skill validate --data-dir ./data` in the destination. Missing or corrupt cache files are represented with issue lists where possible instead of aborting the whole manifest. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
+Use `bible-skill cache manifest --data-dir ./data --json` before transferring a local cache between machines or agent workspaces. The manifest is an inspection aid, not a package or registry claim: it reports `schema_version`, `generated_at`, `data_dir`, and one entry per cache directory with id, name, language, license/source URLs, book/chapter/verse counts, checksum, POSIX-style `relative_path`, `validation_ok`, and `issues`. Automation can copy the data directory, compare the manifest before and after transfer, then run `bible-skill validate --data-dir ./data` in the destination. Missing or corrupt cache files, including malformed sidecar metadata, are represented with issue lists where possible instead of aborting the whole manifest. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
 Local `query` supports text output by default, `--json` for machine-readable passage objects, `--markdown` for note-friendly output headed with the normalized reference and translation id, and `--usfm` for minimal deterministic USFM-like text. `--json`, `--markdown`, and `--usfm` are mutually exclusive. Pass `--attribution` on local `query` or `compare` exports to include available `license_url` and `source_url` metadata. JSON adds a structured `attribution` object only when requested; compare CSV adds stable `license_url` and `source_url` columns.
 
@@ -145,7 +145,7 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum validation, cache manifest inspection, local Markdown and USFM export, comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior and error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, local Markdown and USFM export, comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior and error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
@@ -154,7 +154,6 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 Current roadmap focus:
 
 - Improve live provider resilience and document bounded retry/error behavior.
-- Tighten cache/import validation before agents rely on installed local passages.
 - Prepare packaged release readiness checks without claiming any registry install path before manual verification.
 
 ## Contributing
