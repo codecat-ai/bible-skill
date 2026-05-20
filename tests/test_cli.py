@@ -339,6 +339,113 @@ def test_cli_cache_manifest_text_summarizes_valid_and_invalid_entries(
     assert output[2].startswith("toy\tok\ttranslations/toy/translation.json\tsha256:")
 
 
+def test_cli_cache_prune_dry_run_reports_invalid_entries_without_deleting(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    path = tmp_path / "translations" / "broken"
+    path.mkdir(parents=True)
+    (path / "translation.json").write_text("{", encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "cache", "prune"])
+
+    assert code == 2
+    assert capsys.readouterr().out.splitlines() == [
+        "Cache prune dry-run for " + str(tmp_path),
+        "broken\twould-remove\ttranslation.json is invalid JSON: Expecting property name enclosed in double quotes",
+        "toy\tkept",
+        "Run again with --yes to remove invalid cache directories.",
+    ]
+    assert path.exists()
+    assert (tmp_path / "translations" / "toy").exists()
+
+
+def test_cli_cache_prune_confirmed_deletes_invalid_entries_and_preserves_valid(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    path = tmp_path / "translations" / "broken"
+    path.mkdir(parents=True)
+    (path / "translation.json").write_text("{", encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "cache", "prune", "--yes", "--json"])
+
+    assert code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "schema_version": 1,
+        "dry_run": False,
+        "removed_count": 1,
+        "removed": ["broken"],
+        "kept": ["toy"],
+        "issues": [
+            {
+                "translation_id": "broken",
+                "issues": ["translation.json is invalid JSON: Expecting property name enclosed in double quotes"],
+            }
+        ],
+    }
+    assert not path.exists()
+    assert (tmp_path / "translations" / "toy").exists()
+
+
+def test_cli_cache_prune_targets_requested_ids_and_reports_missing_without_unrelated_deletes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    broken = tmp_path / "translations" / "broken"
+    other = tmp_path / "translations" / "other"
+    broken.mkdir(parents=True)
+    other.mkdir(parents=True)
+    (broken / "translation.json").write_text("{", encoding="utf-8")
+    (other / "translation.json").write_text("{", encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "cache", "prune", "broken", "missing", "--yes", "--json"])
+
+    assert code == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["dry_run"] is False
+    assert payload["removed_count"] == 1
+    assert payload["removed"] == ["broken"]
+    assert payload["kept"] == []
+    assert payload["issues"] == [
+        {
+            "translation_id": "broken",
+            "issues": ["translation.json is invalid JSON: Expecting property name enclosed in double quotes"],
+        },
+        {"translation_id": "missing", "issues": ["translation cache is missing"]},
+    ]
+    assert not broken.exists()
+    assert other.exists()
+    assert (tmp_path / "translations" / "toy").exists()
+
+
+def test_cli_cache_prune_json_reports_malformed_sidecar_without_crashing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    seed_translation(tmp_path)
+    (tmp_path / "translations" / "toy" / "metadata.json").write_text("{", encoding="utf-8")
+
+    code = main(["--data-dir", str(tmp_path), "cache", "prune", "--json"])
+
+    assert code == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "schema_version": 1,
+        "dry_run": True,
+        "removed_count": 0,
+        "removed": ["toy"],
+        "kept": [],
+        "issues": [
+            {
+                "translation_id": "toy",
+                "issues": ["metadata.json is invalid JSON: Expecting property name enclosed in double quotes"],
+            }
+        ],
+    }
+    assert (tmp_path / "translations" / "toy").exists()
+
+
 def test_cli_search_text_outputs_local_metadata_matches(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     seed_translation(tmp_path)
     seed_second_translation(tmp_path)

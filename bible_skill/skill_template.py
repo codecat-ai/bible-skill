@@ -13,6 +13,8 @@ def render_skill(data_dir: str) -> str:
         f"- List installed translations: `bible-skill installed --data-dir {data_dir}`",
         f"- Validate installed translation cache files: `bible-skill validate --data-dir {data_dir}`",
         f"- Inspect a portable local cache manifest: `bible-skill cache manifest --data-dir {data_dir} --json`",
+        f"- Dry-run invalid cache cleanup: `bible-skill cache prune --data-dir {data_dir} --json`",
+        f"- Remove invalid cache directories after review: `bible-skill cache prune --data-dir {data_dir} --yes`",
         f"- Search installed translation metadata: `bible-skill search QUERY --data-dir {data_dir}`",
         f"- Query exact local passages: `bible-skill query TRANSLATION_ID REFERENCE --data-dir {data_dir}`",
         "- Export an exact local passage as Markdown for notes: "
@@ -71,6 +73,9 @@ def render_skill(data_dir: str) -> str:
         "Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local translations in automated "
         "workflows; it checks `translation.json` and sidecar `metadata.json` for malformed metadata, checksum "
         "drift, and metadata mismatches. Use `--json` when callers need machine-readable issue lists.",
+        "When validation reports corruption, inspect `bible-skill cache manifest --data-dir DATA_DIR --json`, run "
+        "`bible-skill cache prune --data-dir DATA_DIR --json` as a dry-run, then rerun with `--yes` only after "
+        "confirming the invalid translation IDs. Re-download removed translations before querying them.",
         "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "
         "wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, "
         "`content`, `verse_text`, or nested mixed fragments.",
