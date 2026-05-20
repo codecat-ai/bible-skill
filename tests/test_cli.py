@@ -1045,6 +1045,31 @@ def test_cli_live_non_retryable_provider_failure_omits_retry_hint(
     assert "--retries 2" not in captured.err
 
 
+def test_cli_live_schema_diagnostic_reaches_stderr_without_retry_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
+        raise ProviderError(
+            "unsupported live passage schema: missing `reference`; missing text-bearing field "
+            "(`text`, `content`, or `verse_text`)",
+            retryable=False,
+        )
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--json"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert captured.out == ""
+    assert "unsupported live passage schema" in captured.err
+    assert "missing `reference`" in captured.err
+    assert "missing text-bearing field" in captured.err
+    assert "--retries 2" not in captured.err
+
+
 def test_render_live_csv_exports_one_row_per_usable_verse() -> None:
     output = _render_live_csv(
         {

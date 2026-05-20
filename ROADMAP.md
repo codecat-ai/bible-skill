@@ -4,6 +4,8 @@ Bible Skill is in the portfolio **growth** tier, with a target cadence of **1 fo
 
 ## Completion Review
 
+The previous roadmap item to add richer diagnostics for live provider schema changes is complete. `BibleApiClient.passage()` now validates live payloads before rendering, preserves raw `--json` output for valid supported payloads, and reports non-retryable schema diagnostics for missing `reference`, missing text-bearing fields, malformed `data`, malformed `verses` or `passages`, malformed verse entries, and missing verse text. CLI stderr surfaces those diagnostics without the transient live retry hint, and the generated skill text plus English, Chinese, and Japanese READMEs document the behavior.
+
 The previous roadmap item to improve live provider resilience is complete. Transient HTTP and network provider failures are now covered by offline fixtures, carry retryable classification through `ProviderError`, and show live-only stderr guidance to try `--retries 2` when no retry count was requested. Invalid JSON, unsupported provider schema, and semantic non-retryable HTTP failures do not get retry guidance. The generated skill text and English, Chinese, and Japanese READMEs document the behavior without adding package-registry install claims.
 
 The previous roadmap item to expand offline/local-only agent setup guidance using source-checkout workflows only is complete. The generated skill text and English, Chinese, and Japanese READMEs now show a source checkout, local virtual environment, `uv pip install -e '.[dev]'`, local data directory validation, `bible-skill skill --data-dir ...`, and local-first agent usage without adding package-registry install claims.
@@ -20,15 +22,15 @@ The previous roadmap item to tighten cache/import validation is complete. `Store
 
 The first manual source-checkout release-candidate evaluation is complete. On 2026-05-20, a fresh local verification run passed `ruff check .`, `ruff format --check .`, `pytest -q` with 144 tests, `python -m build`, JSON validation for `bible-skill release check --json`, and `bible-skill release check --dist-dir dist` against the generated wheel and sdist. The artifacts matched the `pyproject.toml` name/version metadata, README variants made no unverified registry install claims, and no package-registry release was published or documented.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider schema diagnostics can become clearer, and release packaging should not be advertised until a maintainer explicitly approves and verifies a real registry release.
+The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: release packaging should not be advertised until a maintainer explicitly approves and verifies a real registry release.
 
 ## Now
 
-- Add richer diagnostics for provider schema changes so live fallback failures show which expected fields were missing or malformed.
+- Prepare a maintainer-facing release checklist that keeps source-checkout verification, built-artifact checks, and explicit no-registry-release status together until a real registry release is approved.
 
 ## Next
 
-- Prepare a maintainer-facing release checklist that keeps source-checkout verification, built-artifact checks, and explicit no-registry-release status together until a real registry release is approved.
+- Add a documented smoke-test transcript for the most common local-first agent workflow using a tiny fixture cache, so maintainers can verify UX changes without network access.
 
 ## Later
 

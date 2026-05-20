@@ -40,6 +40,8 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert "Use `--json` when callers need machine-readable issue lists" in text
     assert "top-level `data` object" in text
     assert "`content`, `verse_text`, or nested mixed fragments" in text
+    assert "Unsupported live provider schemas fail with diagnostics" in text
+    assert "missing `reference`, malformed `data`, malformed `verses` or `passages`, and missing verse text" in text
     assert "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls" in text
     assert "Use local `--attribution` when outputs need translation license or source URLs." in text
     assert "Use `bible-skill cache manifest --json` before transferring a cache between machines" in text

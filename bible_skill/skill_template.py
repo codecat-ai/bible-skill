@@ -79,6 +79,9 @@ def render_skill(data_dir: str) -> str:
         "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "
         "wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, "
         "`content`, `verse_text`, or nested mixed fragments.",
+        "Unsupported live provider schemas fail with diagnostics for missing `reference`, malformed `data`, malformed "
+        "`verses` or `passages`, and missing verse text. These schema failures are not retryable and do not show the "
+        "live retry hint.",
         "Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls; semantic provider "
         "responses such as 404/no passage found are not retried.",
         "Live provider HTTP errors include the status, useful provider error text when available, and `Retry-After` "
