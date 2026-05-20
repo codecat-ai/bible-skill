@@ -33,6 +33,7 @@ def test_skill_export_mentions_local_first_exact_commands() -> None:
     assert 'bible-skill live "John 3:16" --translation web --csv' in text
     assert "Live `--json` output is raw provider JSON." in text
     assert "Live provider HTTP errors include the status" in text
+    assert "retrying with `--retries 2`" in text
     assert "sidecar `metadata.json`" in text
     assert "Use `--json` when callers need machine-readable issue lists" in text
     assert "top-level `data` object" in text

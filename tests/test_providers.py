@@ -116,6 +116,33 @@ def test_get_json_retry_exhaustion_preserves_provider_error_details(monkeypatch:
     assert "HTTP 503 while fetching https://provider.example.invalid/passage" in message
     assert "Provider maintenance window is active." in message
     assert "Retry after 90" in message
+    assert exc_info.value.retryable is True
+
+
+def test_get_json_network_failure_marks_error_retryable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_urlopen(*args: object, **kwargs: object) -> object:
+        raise URLError("temporary DNS failure")
+
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+
+    with pytest.raises(ProviderError) as exc_info:
+        providers._get_json("https://provider.example.invalid/passage")
+
+    assert "Network error while fetching https://provider.example.invalid/passage" in str(exc_info.value)
+    assert exc_info.value.retryable is True
+
+
+def test_get_json_invalid_json_error_is_not_retryable(monkeypatch: pytest.MonkeyPatch) -> None:
+    def fake_urlopen(*args: object, **kwargs: object) -> JsonResponse:
+        return JsonResponse("{")
+
+    monkeypatch.setattr(providers, "urlopen", fake_urlopen)
+
+    with pytest.raises(ProviderError) as exc_info:
+        providers._get_json("https://provider.example.invalid/passage")
+
+    assert str(exc_info.value) == "Invalid JSON from https://provider.example.invalid/passage"
+    assert exc_info.value.retryable is False
 
 
 def test_get_json_does_not_retry_non_retryable_http_error(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -139,6 +166,7 @@ def test_get_json_does_not_retry_non_retryable_http_error(monkeypatch: pytest.Mo
 
     assert attempts == 1
     assert "No passage found." in str(exc_info.value)
+    assert exc_info.value.retryable is False
 
 
 def raise_http_error(

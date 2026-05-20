@@ -25,7 +25,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     except FileNotFoundError as exc:
         print(f"Missing local translation: {exc}", file=sys.stderr)
         return 2
-    except (QueryError, ProviderError, OSError) as exc:
+    except ProviderError as exc:
+        print(f"Error: {_format_provider_error(args, exc)}", file=sys.stderr)
+        return 2
+    except (QueryError, OSError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
@@ -248,6 +251,13 @@ def _live(args: argparse.Namespace) -> int:
         print(payload.get("reference", args.reference))
         print(payload.get("text", "").strip())
     return 0
+
+
+def _format_provider_error(args: argparse.Namespace, exc: ProviderError) -> str:
+    message = str(exc)
+    if args.command == "live" and args.retries == 0 and exc.retryable:
+        return f"{message}\nHint: transient provider failures may succeed if you retry with `--retries 2`."
+    return message
 
 
 def _positive_float(value: str) -> float:

@@ -23,7 +23,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Export local query results as note-friendly Markdown or minimal deterministic USFM-like text, with optional local translation attribution.
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output and configurable timeout/retry settings.
-- Report live provider HTTP failures with useful provider messages, compact body excerpts, and `Retry-After` backoff hints when available.
+- Report live provider HTTP failures with useful provider messages, compact body excerpts, `Retry-After` backoff hints when available, and retry guidance for transient failures.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
 ## Installation
@@ -124,7 +124,7 @@ Use `bible-skill cache manifest --data-dir ./data --json` before transferring a 
 
 Local `query` supports text output by default, `--json` for machine-readable passage objects, `--markdown` for note-friendly output headed with the normalized reference and translation id, and `--usfm` for minimal deterministic USFM-like text. `--json`, `--markdown`, and `--usfm` are mutually exclusive. Pass `--attribution` on local `query` or `compare` exports to include available `license_url` and `source_url` metadata. JSON adds a structured `attribution` object only when requested; compare CSV adds stable `license_url` and `source_url` columns.
 
-The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Use `--timeout SECONDS` to change the provider request timeout from the default 30 seconds, and `--retries COUNT` to retry transient network errors or transient HTTP responses such as 408, 429, and 5xx responses. The default retry count is 0, so existing single-attempt behavior is preserved unless retries are requested. Semantic provider responses such as 404/no passage found are not retried. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
+The live fallback supports `--json` for the raw provider response, `--markdown` for note-friendly output, and `--csv` for spreadsheet-friendly rows with `reference`, `translation`, `verse_reference`, and `text` columns. `--json`, `--markdown`, and `--csv` are mutually exclusive. Use `--timeout SECONDS` to change the provider request timeout from the default 30 seconds, and `--retries COUNT` to retry transient network errors or transient HTTP responses such as 408, 429, and 5xx responses. The default retry count is 0, so existing single-attempt behavior is preserved unless retries are requested. When a live network failure or transient HTTP provider failure occurs with the default retry count, CLI stderr suggests trying `--retries 2`; unsupported provider schema and invalid JSON failures do not get that hint. Semantic provider responses such as 404/no passage found are not retried. Markdown and CSV rendering remains compatible with bible-api.com-shaped payloads, and also tolerates provider payloads wrapped in a top-level `data` object, verse lists named `verses` or `passages`, and verse text stored as `text`, `content`, `verse_text`, or nested arrays/objects. Nested fragments are joined with readable spacing. When a live provider returns an HTTP error, CLI stderr includes the status, a readable provider error field or short normalized plain-text body when available, and any `Retry-After` value.
 
 ## Data and licensing
 
@@ -145,7 +145,7 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, local Markdown and USFM export, comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior and error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, local Markdown and USFM export, comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
@@ -153,8 +153,8 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 
 Current roadmap focus:
 
-- Improve live provider resilience and document bounded retry/error behavior.
 - Prepare packaged release readiness checks without claiming any registry install path before manual verification.
+- Repair and document local cache recovery workflows for invalid cache entries.
 
 ## Contributing
 

@@ -4,6 +4,8 @@ Bible Skill is in the portfolio **growth** tier, with a target cadence of **1 fo
 
 ## Completion Review
 
+The previous roadmap item to improve live provider resilience is complete. Transient HTTP and network provider failures are now covered by offline fixtures, carry retryable classification through `ProviderError`, and show live-only stderr guidance to try `--retries 2` when no retry count was requested. Invalid JSON, unsupported provider schema, and semantic non-retryable HTTP failures do not get retry guidance. The generated skill text and English, Chinese, and Japanese READMEs document the behavior without adding package-registry install claims.
+
 The previous roadmap item to expand offline/local-only agent setup guidance using source-checkout workflows only is complete. The generated skill text and English, Chinese, and Japanese READMEs now show a source checkout, local virtual environment, `uv pip install -e '.[dev]'`, local data directory validation, `bible-skill skill --data-dir ...`, and local-first agent usage without adding package-registry install claims.
 
 The previous roadmap item to add optional local passage export metadata for translation license and source attribution is complete. Local `query` and `compare` exports now support `--attribution`, and the documentation describes the resulting `license_url` and `source_url` behavior.
@@ -12,20 +14,20 @@ The previous roadmap item to review cache portability across operating systems a
 
 The previous roadmap item to tighten cache/import validation is complete. `Store.validate_translation()` now validates the sidecar `metadata.json` alongside `translation.json`, reports missing or malformed sidecar metadata, detects checksum drift, flags metadata mismatches, and lets cache manifests surface those issues without aborting manifest generation.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider resilience needs more hardening, cache repair workflows can improve, and release packaging should not be advertised until it has been manually verified.
+The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: cache repair workflows can improve, provider schema diagnostics can become clearer, and release packaging should not be advertised until it has been manually verified.
 
 ## Now
 
-- Improve live provider resilience with clearer retry guidance, failure fixtures, and documented behavior for transient HTTP and network errors.
+- Prepare packaged release readiness checks without publishing or documenting registry install commands before verification.
 
 ## Next
 
-- Prepare packaged release readiness checks without publishing or documenting registry install commands before verification.
+- Repair and document local cache recovery workflows for invalid cache entries.
 
 ## Later
 
 - Evaluate additional allowed translation providers only when their licensing and attribution requirements can be represented clearly.
-- Consider richer diagnostics for provider schema changes and local cache repair workflows.
+- Consider richer diagnostics for provider schema changes.
 - Publish package installation guidance only after a real release path is manually verified.
 
 ## Maintenance Triggers
