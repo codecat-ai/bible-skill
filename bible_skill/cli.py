@@ -69,6 +69,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cache_manifest.add_argument("--json", action="store_true", help="Output JSON.")
     cache_manifest.set_defaults(func=_cache_manifest)
+    cache_prune = cache_subparsers.add_parser(
+        "prune", parents=[common], help="Remove invalid local translation cache directories."
+    )
+    cache_prune.add_argument("translation_ids", nargs="*", help="Translation IDs to check. Defaults to all cache dirs.")
+    cache_prune.add_argument("--yes", action="store_true", help="Delete invalid cache directories.")
+    cache_prune.add_argument("--json", action="store_true", help="Output JSON.")
+    cache_prune.set_defaults(func=_cache_prune)
 
     release = subparsers.add_parser("release", help="Inspect source-checkout release readiness.")
     release_subparsers = release.add_subparsers(dest="release_command", required=True)
@@ -189,6 +196,17 @@ def _cache_manifest(args: argparse.Namespace) -> int:
         _print_json(manifest)
     else:
         print(_render_cache_manifest_text(manifest))
+    return 0
+
+
+def _cache_prune(args: argparse.Namespace) -> int:
+    result = Store(args.data_dir).prune_invalid_cache_entries(list(args.translation_ids), dry_run=not args.yes)
+    if args.json:
+        _print_json(result)
+    else:
+        print(_render_cache_prune_text(result, args.data_dir))
+    if result["issues"]:
+        return 2 if result["dry_run"] or result["removed_count"] != len(result["issues"]) else 0
     return 0
 
 
@@ -447,6 +465,25 @@ def _render_cache_manifest_text(manifest: dict[str, Any]) -> str:
         status = "ok" if row["validation_ok"] else "invalid"
         detail = row["checksum"] if row["validation_ok"] else "; ".join(row["issues"])
         lines.append(f"{row['id']}\t{status}\t{row['relative_path']}\t{detail}")
+    return "\n".join(lines)
+
+
+def _render_cache_prune_text(result: dict[str, Any], data_dir: str) -> str:
+    action = "dry-run" if result["dry_run"] else "confirmed"
+    lines = [f"Cache prune {action} for {data_dir}"]
+    issue_by_id = {row["translation_id"]: row["issues"] for row in result["issues"]}
+    for translation_id in result["removed"]:
+        status = "would-remove" if result["dry_run"] else "removed"
+        lines.append(f"{translation_id}\t{status}\t{'; '.join(issue_by_id.get(translation_id, []))}")
+    for translation_id in result["kept"]:
+        lines.append(f"{translation_id}\tkept")
+    for translation_id, issues in issue_by_id.items():
+        if translation_id not in result["removed"]:
+            lines.append(f"{translation_id}\tissue\t{'; '.join(issues)}")
+    if result["dry_run"] and result["removed"]:
+        lines.append("Run again with --yes to remove invalid cache directories.")
+    elif not result["removed"] and not result["issues"]:
+        lines.append("No invalid cache directories found.")
     return "\n".join(lines)
 
 

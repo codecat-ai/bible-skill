@@ -272,3 +272,24 @@ def test_store_cache_manifest_reports_malformed_sidecar_metadata_without_crashin
     assert manifest["translations"][0]["issues"] == [
         "metadata.json is invalid JSON: Expecting property name enclosed in double quotes"
     ]
+
+
+def test_store_prunes_only_invalid_cache_directories_when_confirmed(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    broken = tmp_path / "translations" / "broken"
+    broken.mkdir(parents=True)
+    (broken / "translation.json").write_text("{", encoding="utf-8")
+
+    result = store.prune_invalid_cache_entries(translation_ids=[], dry_run=False)
+
+    assert result["removed"] == ["broken"]
+    assert result["kept"] == ["toy"]
+    assert result["issues"] == [
+        {
+            "translation_id": "broken",
+            "issues": ["translation.json is invalid JSON: Expecting property name enclosed in double quotes"],
+        }
+    ]
+    assert not broken.exists()
+    assert (tmp_path / "translations" / "toy").exists()

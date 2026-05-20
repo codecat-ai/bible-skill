@@ -62,6 +62,7 @@ bible-skill translations --query web
 bible-skill download web --data-dir ./data
 bible-skill validate --data-dir ./data
 bible-skill cache manifest --data-dir ./data --json
+bible-skill cache prune --data-dir ./data --json
 bible-skill installed --data-dir ./data
 bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 ```
@@ -77,6 +78,8 @@ bible-skill installed --data-dir ./data
 bible-skill validate --data-dir ./data
 bible-skill validate web --data-dir ./data --json
 bible-skill cache manifest --data-dir ./data --json
+bible-skill cache prune --data-dir ./data --json
+bible-skill cache prune web --data-dir ./data --yes
 bible-skill search english --data-dir ./data
 bible-skill search license.example --data-dir ./data --json
 bible-skill query web "John 3:16" --data-dir ./data
@@ -121,7 +124,7 @@ The pure Python API is available as `bible_skill.extract.extract_references(text
 
 Use `--data-dir` to choose where downloaded translations are saved. Without it, Bible Skill uses a platform-appropriate user data directory. Downloaded records include translation metadata, source URL, fetched timestamp, license URL when the provider supplies it, and a deterministic `sha256:` checksum calculated from normalized translation content without the fetched timestamp. The `validate` command checks installed `translation.json` files and their sidecar `metadata.json` files before agents rely on them; pass optional translation IDs to validate only those caches, or omit IDs to validate every installed translation. It reports missing or malformed sidecar metadata, sidecar checksum drift, and mismatches between sidecar metadata and translation metadata. Text output is tab-separated and concise, while `--json` emits objects with `translation_id`, `ok`, `checksum`, and `issues`. Validation exits non-zero if any requested cache is missing or invalid.
 
-Use `bible-skill cache manifest --data-dir ./data --json` before transferring a local cache between machines or agent workspaces. The manifest is an inspection aid, not a package or registry claim: it reports `schema_version`, `generated_at`, `data_dir`, and one entry per cache directory with id, name, language, license/source URLs, book/chapter/verse counts, checksum, POSIX-style `relative_path`, `validation_ok`, and `issues`. Automation can copy the data directory, compare the manifest before and after transfer, then run `bible-skill validate --data-dir ./data` in the destination. Missing or corrupt cache files, including malformed sidecar metadata, are represented with issue lists where possible instead of aborting the whole manifest. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
+Use `bible-skill cache manifest --data-dir ./data --json` before transferring a local cache between machines or agent workspaces. The manifest is an inspection aid, not a package or registry claim: it reports `schema_version`, `generated_at`, `data_dir`, and one entry per cache directory with id, name, language, license/source URLs, book/chapter/verse counts, checksum, POSIX-style `relative_path`, `validation_ok`, and `issues`. Automation can copy the data directory, compare the manifest before and after transfer, then run `bible-skill validate --data-dir ./data` in the destination. Missing or corrupt cache files, including malformed sidecar metadata, are represented with issue lists where possible instead of aborting the whole manifest. When validation reports corruption, inspect the manifest, run `bible-skill cache prune --data-dir ./data --json` as the default dry-run, then run `bible-skill cache prune TRANSLATION_ID --data-dir ./data --yes` or omit IDs to remove all invalid cache directories after review. JSON prune output includes `schema_version`, `dry_run`, `removed_count`, `removed`, `kept`, and `issues`; valid entries are never removed, and missing requested IDs are reported as issues without deleting unrelated entries. Re-download removed translations before querying them. The `search` and `compare` commands read only installed local translations, so download each translation before searching local metadata or comparing passages.
 
 Local `query` supports text output by default, `--json` for machine-readable passage objects, `--markdown` for note-friendly output headed with the normalized reference and translation id, and `--usfm` for minimal deterministic USFM-like text. `--json`, `--markdown`, and `--usfm` are mutually exclusive. Pass `--attribution` on local `query` or `compare` exports to include available `license_url` and `source_url` metadata. JSON adds a structured `attribution` object only when requested; compare CSV adds stable `license_url` and `source_url` columns.
 
@@ -149,7 +152,7 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, local Markdown and USFM export, comparison exports, release readiness checks, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, invalid cache pruning, local Markdown and USFM export, comparison exports, release readiness checks, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
@@ -157,7 +160,7 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 
 Current roadmap focus:
 
-- Repair and document local cache recovery workflows for invalid cache entries.
+- Evaluate the first manual source-checkout release candidate with `bible-skill release check` and built artifacts, without adding registry install commands until a real registry release is verified.
 
 ## Contributing
 

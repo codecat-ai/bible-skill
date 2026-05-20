@@ -17,6 +17,8 @@ def test_english_readme_documents_source_checkout_offline_agent_setup() -> None:
     assert "uv pip install -e '.[dev]'" in text
     assert "bible-skill validate --data-dir ./data" in text
     assert "bible-skill cache manifest --data-dir ./data --json" in text
+    assert "bible-skill cache prune --data-dir ./data --json" in text
+    assert "bible-skill cache prune TRANSLATION_ID --data-dir ./data --yes" in text
     assert "bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md" in text
     assert "bible-skill release check --json" in text
     assert "pre-publish readiness check only" in text
@@ -35,6 +37,8 @@ def test_translated_readmes_document_matching_offline_agent_setup() -> None:
         assert "uv pip install -e '.[dev]'" in text
         assert "bible-skill validate --data-dir ./data" in text
         assert "bible-skill cache manifest --data-dir ./data --json" in text
+        assert "bible-skill cache prune --data-dir ./data --json" in text
+        assert "bible-skill cache prune TRANSLATION_ID --data-dir ./data --yes" in text
         assert "bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md" in text
         assert "bible-skill release check --json" in text
         assert "pip install bible-skill" in text

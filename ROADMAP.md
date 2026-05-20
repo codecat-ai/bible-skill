@@ -14,22 +14,23 @@ The previous roadmap item to add optional local passage export metadata for tran
 
 The previous roadmap item to review cache portability across operating systems and scripted automation contexts is complete. `Store.cache_manifest()` and `bible-skill cache manifest --json` now expose a deterministic, JSON-serializable cache inspection manifest with POSIX-style relative paths, validation status, issue lists for missing or corrupt caches, and documentation examples for transfer, revalidation, and agent failure handling without packaging or registry claims.
 
+The previous roadmap item to repair and document local cache recovery workflows for invalid cache entries is complete. `Store.prune_invalid_cache_entries()` and `bible-skill cache prune` now validate cache directories, default to dry-run output, remove only invalid translation cache directories with `--yes`, preserve valid entries, report missing requested IDs without deleting unrelated caches, and document the validate, manifest, dry-run prune, confirmed prune, and re-download flow in the generated skill and synchronized READMEs.
+
 The previous roadmap item to tighten cache/import validation is complete. `Store.validate_translation()` now validates the sidecar `metadata.json` alongside `translation.json`, reports missing or malformed sidecar metadata, detects checksum drift, flags metadata mismatches, and lets cache manifests surface those issues without aborting manifest generation.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: cache repair workflows can improve, provider schema diagnostics can become clearer, and release packaging should not be advertised until it has been manually verified.
+The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: release candidate verification remains unproven, provider schema diagnostics can become clearer, and release packaging should not be advertised until it has been manually verified.
 
 ## Now
 
-- Repair and document local cache recovery workflows for invalid cache entries.
+- Evaluate the first manual source-checkout release candidate with `bible-skill release check` and built artifacts, without adding registry install commands until a real registry release is verified.
 
 ## Next
 
-- Evaluate the first manual source-checkout release candidate with `bible-skill release check` and built artifacts, without adding registry install commands until a real registry release is verified.
+- Add richer diagnostics for provider schema changes so live fallback failures show which expected fields were missing or malformed.
 
 ## Later
 
 - Evaluate additional allowed translation providers only when their licensing and attribution requirements can be represented clearly.
-- Consider richer diagnostics for provider schema changes.
 - Publish package installation guidance only after a real release path is manually verified.
 
 ## Maintenance Triggers

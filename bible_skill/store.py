@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -168,6 +169,47 @@ class Store:
             "generated_at": timestamp,
             "data_dir": str(self.data_dir),
             "translations": [self._manifest_entry_for(path.name) for path in self._translation_dirs()],
+        }
+
+    def prune_invalid_cache_entries(self, translation_ids: list[str], *, dry_run: bool = True) -> dict[str, Any]:
+        requested_ids = [translation_id.lower() for translation_id in translation_ids]
+        candidate_ids = requested_ids or [path.name for path in self._translation_dirs()]
+        removed: list[str] = []
+        kept: list[str] = []
+        issues: list[dict[str, Any]] = []
+
+        for translation_id in candidate_ids:
+            translation_dir = self._translation_dir(translation_id)
+            if translation_id in requested_ids and not translation_dir.exists():
+                issues.append({"translation_id": translation_id, "issues": ["translation cache is missing"]})
+                continue
+
+            try:
+                validation = self.validate_translation(translation_id)
+            except (TypeError, ValueError, KeyError, AttributeError) as exc:
+                validation = ValidationResult(
+                    translation_id=translation_id,
+                    ok=False,
+                    checksum="",
+                    issues=[f"translation cache validation failed: {exc}"],
+                )
+
+            if validation.ok:
+                kept.append(translation_id)
+                continue
+
+            removed.append(translation_id)
+            issues.append({"translation_id": translation_id, "issues": validation.issues})
+            if not dry_run and translation_dir.exists():
+                shutil.rmtree(translation_dir)
+
+        return {
+            "schema_version": 1,
+            "dry_run": dry_run,
+            "removed_count": 0 if dry_run else len(removed),
+            "removed": removed,
+            "kept": kept,
+            "issues": issues,
         }
 
     def _translation_dir(self, translation_id: str) -> Path:
