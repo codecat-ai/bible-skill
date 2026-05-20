@@ -160,7 +160,7 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 
 Current roadmap focus:
 
-- Evaluate the first manual source-checkout release candidate with `bible-skill release check` and built artifacts, without adding registry install commands until a real registry release is verified.
+- Add richer diagnostics for provider schema changes so live fallback failures show which expected fields were missing or malformed. The first source-checkout release-candidate check has passed locally with built artifacts, but no package-registry release has been published or documented.
 
 ## Contributing
 

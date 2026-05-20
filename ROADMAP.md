@@ -18,15 +18,17 @@ The previous roadmap item to repair and document local cache recovery workflows 
 
 The previous roadmap item to tighten cache/import validation is complete. `Store.validate_translation()` now validates the sidecar `metadata.json` alongside `translation.json`, reports missing or malformed sidecar metadata, detects checksum drift, flags metadata mismatches, and lets cache manifests surface those issues without aborting manifest generation.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: release candidate verification remains unproven, provider schema diagnostics can become clearer, and release packaging should not be advertised until it has been manually verified.
+The first manual source-checkout release-candidate evaluation is complete. On 2026-05-20, a fresh local verification run passed `ruff check .`, `ruff format --check .`, `pytest -q` with 144 tests, `python -m build`, JSON validation for `bible-skill release check --json`, and `bible-skill release check --dist-dir dist` against the generated wheel and sdist. The artifacts matched the `pyproject.toml` name/version metadata, README variants made no unverified registry install claims, and no package-registry release was published or documented.
+
+The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: provider schema diagnostics can become clearer, and release packaging should not be advertised until a maintainer explicitly approves and verifies a real registry release.
 
 ## Now
 
-- Evaluate the first manual source-checkout release candidate with `bible-skill release check` and built artifacts, without adding registry install commands until a real registry release is verified.
+- Add richer diagnostics for provider schema changes so live fallback failures show which expected fields were missing or malformed.
 
 ## Next
 
-- Add richer diagnostics for provider schema changes so live fallback failures show which expected fields were missing or malformed.
+- Prepare a maintainer-facing release checklist that keeps source-checkout verification, built-artifact checks, and explicit no-registry-release status together until a real registry release is approved.
 
 ## Later
 
