@@ -24,6 +24,7 @@ LLMs often know Bible passages broadly, but they can mix translations, omit word
 - Compare the same local passage across two or more installed translations in text, JSON, Markdown, or CSV.
 - Use bible-api.com as a live fallback for precise passage queries without downloading a whole Bible, with text, raw JSON, Markdown, or CSV output and configurable timeout/retry settings.
 - Report live provider HTTP failures with useful provider messages, compact body excerpts, `Retry-After` backoff hints when available, and retry guidance for transient failures.
+- Check source-checkout packaging and documentation readiness before any manual release, without publishing or claiming registry install availability.
 - Export a Hermes-compatible `SKILL.md` for AI-agent workflows.
 
 ## Installation
@@ -134,18 +135,21 @@ Bible Skill does not include Bible text in this repository. Users are responsibl
 
 Runtime code uses Python 3.11+ and the standard library, including `urllib` for HTTP clients. Tests use tiny artificial fixtures rather than Bible text.
 
+Use `bible-skill release check` from a source checkout to inspect packaging metadata, top-level README/LICENSE files, MIT license text, built artifact metadata in `dist/` when present, and README variants for unverified registry install claims. It is a pre-publish readiness check only; it does not publish anything or verify package-registry availability. Use `--json` for parseable automation output on stdout, and `--dist-dir PATH` to inspect a specific artifact directory.
+
 Run checks from a prepared development environment:
 
 ```sh
 ruff check .
 ruff format --check .
 pytest -q
+bible-skill release check --json
 python -m build
 ```
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, local Markdown and USFM export, comparison exports, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, local Markdown and USFM export, comparison exports, release readiness checks, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
@@ -153,7 +157,6 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 
 Current roadmap focus:
 
-- Prepare packaged release readiness checks without claiming any registry install path before manual verification.
 - Repair and document local cache recovery workflows for invalid cache entries.
 
 ## Contributing

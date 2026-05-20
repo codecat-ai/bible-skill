@@ -12,6 +12,7 @@ from typing import Any
 from bible_skill.extract import ExtractedReference, extract_references
 from bible_skill.providers import BibleApiClient, FreeUseBibleApiClient, ProviderError
 from bible_skill.query import PassageResult, QueryError, query_passage, render_markdown, render_usfm
+from bible_skill.release_check import check_release_readiness, render_release_check_text
 from bible_skill.search import search_installed
 from bible_skill.skill_template import render_skill
 from bible_skill.store import Store
@@ -68,6 +69,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     cache_manifest.add_argument("--json", action="store_true", help="Output JSON.")
     cache_manifest.set_defaults(func=_cache_manifest)
+
+    release = subparsers.add_parser("release", help="Inspect source-checkout release readiness.")
+    release_subparsers = release.add_subparsers(dest="release_command", required=True)
+    release_check = release_subparsers.add_parser(
+        "check",
+        help="Check source checkout release readiness without publishing.",
+        description="Check source checkout release readiness without publishing.",
+    )
+    release_check.add_argument("--root", default=".", help="Source checkout root to inspect.")
+    release_check.add_argument(
+        "--dist-dir",
+        help="Built artifact directory to inspect. Defaults to ROOT/dist if present.",
+    )
+    release_check.add_argument("--json", action="store_true", help="Output JSON.")
+    release_check.set_defaults(func=_release_check)
 
     search = subparsers.add_parser("search", parents=[common], help="Search installed translation metadata.")
     search.add_argument("query")
@@ -174,6 +190,15 @@ def _cache_manifest(args: argparse.Namespace) -> int:
     else:
         print(_render_cache_manifest_text(manifest))
     return 0
+
+
+def _release_check(args: argparse.Namespace) -> int:
+    result = check_release_readiness(args.root, args.dist_dir)
+    if args.json:
+        _print_json(result)
+    else:
+        print(render_release_check_text(result))
+    return 0 if result["ok"] else 2
 
 
 def _search(args: argparse.Namespace) -> int:

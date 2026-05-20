@@ -8,6 +8,8 @@ The previous roadmap item to improve live provider resilience is complete. Trans
 
 The previous roadmap item to expand offline/local-only agent setup guidance using source-checkout workflows only is complete. The generated skill text and English, Chinese, and Japanese READMEs now show a source checkout, local virtual environment, `uv pip install -e '.[dev]'`, local data directory validation, `bible-skill skill --data-dir ...`, and local-first agent usage without adding package-registry install claims.
 
+The previous roadmap item to prepare packaged release readiness checks without registry install claims is complete. `bible-skill release check` now inspects source-checkout packaging metadata, top-level README/LICENSE files, MIT license text, built artifact metadata when a `dist/` directory is available, and README variants for unverified registry install claims. It provides human-readable output and parseable `--json` output without publishing anything or claiming package-registry availability.
+
 The previous roadmap item to add optional local passage export metadata for translation license and source attribution is complete. Local `query` and `compare` exports now support `--attribution`, and the documentation describes the resulting `license_url` and `source_url` behavior.
 
 The previous roadmap item to review cache portability across operating systems and scripted automation contexts is complete. `Store.cache_manifest()` and `bible-skill cache manifest --json` now expose a deterministic, JSON-serializable cache inspection manifest with POSIX-style relative paths, validation status, issue lists for missing or corrupt caches, and documentation examples for transfer, revalidation, and agent failure handling without packaging or registry claims.
@@ -18,11 +20,11 @@ The project remains growth rather than maintenance because it is useful and test
 
 ## Now
 
-- Prepare packaged release readiness checks without publishing or documenting registry install commands before verification.
+- Repair and document local cache recovery workflows for invalid cache entries.
 
 ## Next
 
-- Repair and document local cache recovery workflows for invalid cache entries.
+- Evaluate the first manual source-checkout release candidate with `bible-skill release check` and built artifacts, without adding registry install commands until a real registry release is verified.
 
 ## Later
 
