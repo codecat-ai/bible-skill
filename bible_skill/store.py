@@ -153,6 +153,7 @@ class Store:
             issues.append("metadata.checksum is required")
         elif stored_checksum != checksum:
             issues.append("metadata.checksum does not match translation content")
+        issues.extend(_sidecar_metadata_issues(path.with_name("metadata.json"), metadata, checksum))
 
         normalized = normalize_translation(data)
         result_id = str(normalized["metadata"].get("id") or translation_id)
@@ -300,6 +301,35 @@ def _schema_issues(data: dict[str, Any]) -> list[str]:
                     continue
                 _require_positive_int(verse, "number", f"{verse_path}.number", issues)
                 _require_non_empty_string(verse, "text", f"{verse_path}.text", issues)
+    return issues
+
+
+def _sidecar_metadata_issues(path: Path, translation_metadata: dict[str, Any], checksum: str) -> list[str]:
+    if not path.exists():
+        return ["metadata.json is missing"]
+
+    try:
+        sidecar = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [f"metadata.json is invalid JSON: {exc.msg}"]
+    except OSError as exc:
+        return [f"metadata.json could not be read: {exc}"]
+    if not isinstance(sidecar, dict):
+        return ["metadata.json root must be an object"]
+
+    issues: list[str] = []
+    expected = {
+        field: translation_metadata.get(field)
+        for field in ("id", "name", "language", "license_url", "fetched_at", "source_url", "checksum")
+    }
+    for field, expected_value in expected.items():
+        if field not in sidecar:
+            issues.append(f"metadata.json.{field} is required")
+        elif sidecar[field] != expected_value:
+            issues.append(f"metadata.json.{field} does not match translation.json metadata")
+
+    if "checksum" in sidecar and sidecar.get("checksum") != checksum:
+        issues.append("metadata.json.checksum does not match translation content")
     return issues
 
 

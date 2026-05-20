@@ -116,6 +116,71 @@ def test_store_validation_reports_checksum_mismatch(tmp_path: Path) -> None:
     assert "metadata.checksum does not match translation content" in result.issues
 
 
+def test_store_validation_reports_missing_sidecar_metadata(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    (tmp_path / "translations" / "toy" / "metadata.json").unlink()
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert "metadata.json is missing" in result.issues
+
+
+def test_store_validation_reports_invalid_sidecar_metadata_json(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    (tmp_path / "translations" / "toy" / "metadata.json").write_text("{", encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert "metadata.json is invalid JSON: Expecting property name enclosed in double quotes" in result.issues
+
+
+def test_store_validation_reports_sidecar_metadata_root_type(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    (tmp_path / "translations" / "toy" / "metadata.json").write_text("[]", encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert "metadata.json root must be an object" in result.issues
+
+
+def test_store_validation_reports_sidecar_metadata_checksum_drift(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    path = tmp_path / "translations" / "toy" / "translation.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["books"][1]["chapters"][0]["verses"][0]["text"] = "Corrupted line."
+    data["metadata"]["checksum"] = store.translation_checksum(data)
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    assert "metadata.json.checksum does not match translation content" in result.issues
+    assert "metadata.json.checksum does not match translation.json metadata" in result.issues
+
+
+def test_store_validation_reports_sidecar_metadata_field_mismatches(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    path = tmp_path / "translations" / "toy" / "metadata.json"
+    metadata = json.loads(path.read_text(encoding="utf-8"))
+    for field in ("id", "name", "language", "license_url", "fetched_at", "source_url", "checksum"):
+        metadata[field] = f"wrong-{field}"
+    path.write_text(json.dumps(metadata), encoding="utf-8")
+
+    result = store.validate_translation("toy")
+
+    assert result.ok is False
+    for field in ("id", "name", "language", "license_url", "fetched_at", "source_url", "checksum"):
+        assert f"metadata.json.{field} does not match translation.json metadata" in result.issues
+
+
 def test_store_validation_reports_missing_requested_translation(tmp_path: Path) -> None:
     result = Store(tmp_path).validate_translation("missing")
 
@@ -192,4 +257,18 @@ def test_store_cache_manifest_reports_corrupt_entries_without_crashing(tmp_path:
             "validation_ok": False,
             "issues": ["translation cache is missing"],
         },
+    ]
+
+
+def test_store_cache_manifest_reports_malformed_sidecar_metadata_without_crashing(tmp_path: Path) -> None:
+    store = Store(tmp_path)
+    store.save_translation("toy", tiny_translation())
+    (tmp_path / "translations" / "toy" / "metadata.json").write_text("{", encoding="utf-8")
+
+    manifest = store.cache_manifest(generated_at="2026-05-20T00:00:00+00:00")
+
+    assert manifest["translations"][0]["id"] == "toy"
+    assert manifest["translations"][0]["validation_ok"] is False
+    assert manifest["translations"][0]["issues"] == [
+        "metadata.json is invalid JSON: Expecting property name enclosed in double quotes"
     ]

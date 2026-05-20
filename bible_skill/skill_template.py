@@ -69,7 +69,8 @@ def render_skill(data_dir: str) -> str:
         "Use `bible-skill cache manifest --json` before transferring a cache between machines; re-run "
         "`bible-skill validate` after transfer and treat manifest `issues` as automation failure signals.",
         "Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local translations in automated "
-        "workflows; use `--json` when callers need machine-readable issue lists.",
+        "workflows; it checks `translation.json` and sidecar `metadata.json` for malformed metadata, checksum "
+        "drift, and metadata mismatches. Use `--json` when callers need machine-readable issue lists.",
         "Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses "
         "wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, "
         "`content`, `verse_text`, or nested mixed fragments.",

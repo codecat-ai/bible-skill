@@ -240,7 +240,10 @@ def test_cli_validate_json_reports_issue_lists(tmp_path: Path, capsys: pytest.Ca
             "translation_id": "toy",
             "ok": False,
             "checksum": Store(tmp_path).translation_checksum(data),
-            "issues": ["metadata.checksum does not match translation content"],
+            "issues": [
+                "metadata.checksum does not match translation content",
+                "metadata.json.checksum does not match translation.json metadata",
+            ],
         },
         {
             "translation_id": "missing",
@@ -249,6 +252,19 @@ def test_cli_validate_json_reports_issue_lists(tmp_path: Path, capsys: pytest.Ca
             "issues": ["translation cache is missing"],
         },
     ]
+
+
+def test_cli_validate_json_reports_sidecar_metadata_issues(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    seed_translation(tmp_path)
+    (tmp_path / "translations" / "toy" / "metadata.json").unlink()
+
+    code = main(["--data-dir", str(tmp_path), "validate", "toy", "--json"])
+
+    assert code == 2
+    payload = json.loads(capsys.readouterr().out)
+    assert payload[0]["translation_id"] == "toy"
+    assert payload[0]["ok"] is False
+    assert payload[0]["issues"] == ["metadata.json is missing"]
 
 
 def test_cli_validate_without_ids_checks_installed_translations(
