@@ -22,15 +22,17 @@ The previous roadmap item to tighten cache/import validation is complete. `Store
 
 The first manual source-checkout release-candidate evaluation is complete. On 2026-05-20, a fresh local verification run passed `ruff check .`, `ruff format --check .`, `pytest -q` with 144 tests, `python -m build`, JSON validation for `bible-skill release check --json`, and `bible-skill release check --dist-dir dist` against the generated wheel and sdist. The artifacts matched the `pyproject.toml` name/version metadata, README variants made no unverified registry install claims, and no package-registry release was published or documented.
 
+The maintainer-facing release checklist is complete. `RELEASE_CHECKLIST.md` now keeps the release boundary, source-checkout verification commands, built-artifact review, documentation truthfulness checks, optional smoke checks, and explicit no-registry-publication notes together. It reinforces that registry install instructions must wait for an approved and verified package-registry release.
+
 The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: release packaging should not be advertised until a maintainer explicitly approves and verifies a real registry release.
 
 ## Now
 
-- Prepare a maintainer-facing release checklist that keeps source-checkout verification, built-artifact checks, and explicit no-registry-release status together until a real registry release is approved.
+- Add a documented smoke-test transcript for the most common local-first agent workflow using a tiny fixture cache, so maintainers can verify UX changes without network access.
 
 ## Next
 
-- Add a documented smoke-test transcript for the most common local-first agent workflow using a tiny fixture cache, so maintainers can verify UX changes without network access.
+- Review whether the release checklist and smoke-test transcript are enough to lower cadence from growth to maintenance, or whether one more release-readiness gap remains before cadence reduction.
 
 ## Later
 
