@@ -1,6 +1,6 @@
 # Roadmap
 
-Bible Skill is in the portfolio **growth** tier, with a target cadence of **1 focused session/week**.
+Bible Skill is in the portfolio **maintenance** tier, with a target cadence of **every 2-4 weeks plus urgent provider, cache, packaging, or generated-skill sync issues**.
 
 ## Completion Review
 
@@ -26,20 +26,23 @@ The maintainer-facing release checklist is complete. `RELEASE_CHECKLIST.md` now 
 
 The documented local-first smoke-test transcript is complete. `docs/local-agent-smoke-transcript.md` now records a network-free maintainer workflow using `scripts/create_tiny_fixture_cache.py`: create a tiny fixture cache, validate it, inspect the manifest, generate skill text against the same `--data-dir`, and query `John 3:16` with Markdown attribution. Tests cover both the script-generated cache and the README links to the transcript.
 
-The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: release packaging should not be advertised until a maintainer explicitly approves and verifies a real registry release.
+The 2026-05-21 cadence/completion review lowers the project from growth to maintenance. The source-checkout workflow, local-first smoke-test transcript, release readiness checks, cache validation/recovery, live provider resilience, live provider schema diagnostics, and generated-skill synchronization paths are now stable enough that routine work should be reactive or adoption-driven rather than weekly feature growth.
+
+The project is not ready for registry-install documentation or package-registry publication. That remains a manual maintainer decision because no registry release has been approved or verified.
 
 ## Now
 
-- Complete a cadence/completion review: decide whether the release checklist plus smoke-test transcript are enough to lower Bible Skill from growth to maintenance, or identify one remaining release-readiness gap before any package-registry release is considered.
+- Maintain the verified source-checkout release candidate: keep local verification, README truthfulness, release checklist, and generated skill output synchronized when behavior or packaging metadata changes.
 
 ## Next
 
-- If cadence remains growth after the completion review, keep the next item explicitly tied to release-readiness, source-checkout UX, provider-shape robustness, or generated-skill synchronization.
+- If adoption feedback appears, improve the source-checkout onboarding path with focused examples or diagnostics tied to real user confusion.
+- If live providers change response shapes, add offline fixtures and schema diagnostics before changing renderer behavior.
 
 ## Later
 
 - Evaluate additional allowed translation providers only when their licensing and attribution requirements can be represented clearly.
-- Publish package installation guidance only after a real release path is manually verified.
+- Publish package installation guidance only after a real release path is manually approved and verified.
 
 ## Maintenance Triggers
 
@@ -51,9 +54,9 @@ The project remains growth rather than maintenance because it is useful and test
 
 ## Cadence Review Notes
 
-- Plan one focused session per week while the project is in growth.
-- Use each session to close one narrow documentation, validation, provider, or release-readiness gap.
-- Reclassify to maintenance only after cache validation, cache portability, provider resilience, and release readiness are stable enough that most sessions are reactive rather than roadmap-driven.
+- Plan one maintenance session every 2-4 weeks while the project is in maintenance.
+- Use routine sessions to preserve source-checkout verification, generated-skill synchronization, provider compatibility, cache integrity, and documentation truthfulness.
+- Reclassify back to growth only when concrete adoption feedback, a verified release path, or provider ecosystem changes create a sustained roadmap rather than one-off maintenance tasks.
 
 ## Completion Review Rules
 

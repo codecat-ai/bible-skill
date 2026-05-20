@@ -159,11 +159,11 @@ The test suite covers reference parsing, local metadata search, local passage lo
 
 ## Roadmap
 
-Bible Skill is tracked as a growth project with a cadence of 1 focused session/week. See [ROADMAP.md](ROADMAP.md) for the completion review, maintenance triggers, and cadence rules.
+Bible Skill is tracked as a maintenance project with a cadence of every 2-4 weeks plus urgent provider, cache, packaging, or generated-skill sync issues. See [ROADMAP.md](ROADMAP.md) for the completion review, maintenance triggers, and cadence rules.
 
 Current roadmap focus:
 
-- The maintainer-facing release checklist and local-first smoke-test transcript are complete. The next focus is a completion review: decide whether release-readiness documentation is enough to lower cadence to maintenance, or identify one remaining release-readiness gap before any package-registry release is considered.
+- The 2026-05-21 completion review lowered cadence to maintenance. Routine work should preserve the verified source-checkout release candidate, README truthfulness, release checklist, and generated skill output; new growth work should wait for adoption feedback, provider changes, or a manually approved and verified release path.
 
 ## Contributing
 
