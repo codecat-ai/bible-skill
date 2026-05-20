@@ -3,13 +3,15 @@ from __future__ import annotations
 import csv
 import io
 import json
+import runpy
+import sys
 from pathlib import Path
 
 import pytest
 
 from bible_skill.cli import _render_compare_csv, _render_live_csv, main
 from bible_skill.providers import BibleApiClient, ProviderError
-from bible_skill.query import PassageResult, VerseResult
+from bible_skill.query import PassageResult, VerseResult, query_passage
 from bible_skill.store import Store
 from tests.fixtures import tiny_translation
 
@@ -40,6 +42,24 @@ def seed_markdown_sensitive_translation(path: Path) -> None:
     }
     data["books"][1]["chapters"][0]["verses"][0]["text"] = "Fixture loved line.\n- accidental list | table"
     Store(path).save_translation("md", data)
+
+
+def test_tiny_fixture_cache_script_creates_valid_local_smoke_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    script = Path(__file__).resolve().parents[1] / "scripts" / "create_tiny_fixture_cache.py"
+    data_dir = tmp_path / "smoke-cache"
+    monkeypatch.setattr(sys, "argv", [str(script), str(data_dir)])
+
+    with pytest.raises(SystemExit) as excinfo:
+        runpy.run_path(str(script), run_name="__main__")
+
+    assert excinfo.value.code == 0
+    store = Store(data_dir)
+    assert store.validate_translation("toy").ok is True
+    passage = query_passage(store.load_translation("toy"), "John 3:16")
+    assert passage.verses[0].text == "Fixture loved line."
+    assert store.load_translation("toy")["metadata"]["source_url"] == "https://example.invalid/toy-translation.json"
 
 
 def test_cli_query_json_outputs_machine_readable_passage(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -70,6 +70,8 @@ bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md
 
 Point the agent at the generated `skills/bible-skill/SKILL.md` and keep `--data-dir ./data` in local lookup commands. Prefer installed translations, and preserve returned wording, normalized references, translation IDs, and attribution metadata. Disable live fallback unless a task explicitly permits network use.
 
+For a network-free maintainer smoke test of that workflow, see [docs/local-agent-smoke-transcript.md](docs/local-agent-smoke-transcript.md). It uses `scripts/create_tiny_fixture_cache.py` to build a tiny local fixture cache, then validates, manifests, generates skill text, and queries `John 3:16` without relying on live providers.
+
 ## Quick start
 
 ```sh
@@ -153,7 +155,7 @@ python -m build
 
 ## Testing
 
-The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, invalid cache pruning, local Markdown and USFM export, comparison exports, release readiness checks, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, live schema diagnostics, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
+The test suite covers reference parsing, local metadata search, local passage lookup, cache checksum and sidecar metadata validation, cache manifest inspection, invalid cache pruning, local Markdown and USFM export, comparison exports, release readiness checks, the documented local agent smoke-test transcript, Free Use Bible API response normalization, provider endpoints, timeout/retry behavior, retry guidance, live schema diagnostics, network/HTTP error fixtures, store/download behavior, CLI output, and generated skill text.
 
 ## Roadmap
 
@@ -161,7 +163,7 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 
 Current roadmap focus:
 
-- The maintainer-facing release checklist is complete. The next focus is a documented smoke-test transcript for the most common local-first agent workflow using a tiny fixture cache, so maintainers can verify UX changes without network access.
+- The maintainer-facing release checklist and local-first smoke-test transcript are complete. The next focus is a completion review: decide whether release-readiness documentation is enough to lower cadence to maintenance, or identify one remaining release-readiness gap before any package-registry release is considered.
 
 ## Contributing
 

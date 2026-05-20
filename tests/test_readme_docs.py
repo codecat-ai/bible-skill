@@ -61,3 +61,24 @@ def test_translated_readmes_document_matching_offline_agent_setup() -> None:
     assert "タスクが明示的にネットワーク使用を許可しない限り、ライブフォールバックを無効にします。" in ja
     assert "公開前の準備状況チェックだけ" in ja
     assert "`reference` の欠落、`data` の不正、`verses` または `passages` の不正、節エントリの不正、節本文の欠落" in ja
+
+
+def test_local_agent_smoke_transcript_is_documented() -> None:
+    transcript = _read("docs/local-agent-smoke-transcript.md")
+    readme = _read("README.md")
+    zh = _read("README-zh.md")
+    ja = _read("README-ja.md")
+
+    assert "# Local-first agent smoke-test transcript" in transcript
+    assert "Network: disabled after fixture preparation" in transcript
+    assert "python scripts/create_tiny_fixture_cache.py /tmp/bible-skill-smoke-data" in transcript
+    assert "bible-skill validate --data-dir /tmp/bible-skill-smoke-data" in transcript
+    query_command = 'bible-skill query toy "John 3:16" --data-dir /tmp/bible-skill-smoke-data --markdown --attribution'
+    assert query_command in transcript
+    assert "Fixture loved line." in transcript
+    assert "bible-skill skill --data-dir /tmp/bible-skill-smoke-data" in transcript
+    assert "Do not use live fallback during this smoke test" in transcript
+
+    for text in (readme, zh, ja):
+        assert "docs/local-agent-smoke-transcript.md" in text
+        assert "scripts/create_tiny_fixture_cache.py" in text

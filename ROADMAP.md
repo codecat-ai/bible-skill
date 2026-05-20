@@ -24,15 +24,17 @@ The first manual source-checkout release-candidate evaluation is complete. On 20
 
 The maintainer-facing release checklist is complete. `RELEASE_CHECKLIST.md` now keeps the release boundary, source-checkout verification commands, built-artifact review, documentation truthfulness checks, optional smoke checks, and explicit no-registry-publication notes together. It reinforces that registry install instructions must wait for an approved and verified package-registry release.
 
+The documented local-first smoke-test transcript is complete. `docs/local-agent-smoke-transcript.md` now records a network-free maintainer workflow using `scripts/create_tiny_fixture_cache.py`: create a tiny fixture cache, validate it, inspect the manifest, generate skill text against the same `--data-dir`, and query `John 3:16` with Markdown attribution. Tests cover both the script-generated cache and the README links to the transcript.
+
 The project remains growth rather than maintenance because it is useful and tested, but still has active adoption work ahead: release packaging should not be advertised until a maintainer explicitly approves and verifies a real registry release.
 
 ## Now
 
-- Add a documented smoke-test transcript for the most common local-first agent workflow using a tiny fixture cache, so maintainers can verify UX changes without network access.
+- Complete a cadence/completion review: decide whether the release checklist plus smoke-test transcript are enough to lower Bible Skill from growth to maintenance, or identify one remaining release-readiness gap before any package-registry release is considered.
 
 ## Next
 
-- Review whether the release checklist and smoke-test transcript are enough to lower cadence from growth to maintenance, or whether one more release-readiness gap remains before cadence reduction.
+- If cadence remains growth after the completion review, keep the next item explicitly tied to release-readiness, source-checkout UX, provider-shape robustness, or generated-skill synchronization.
 
 ## Later
 
