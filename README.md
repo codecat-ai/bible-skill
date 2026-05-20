@@ -139,7 +139,7 @@ Bible Skill does not include Bible text in this repository. Users are responsibl
 
 Runtime code uses Python 3.11+ and the standard library, including `urllib` for HTTP clients. Tests use tiny artificial fixtures rather than Bible text.
 
-Use `bible-skill release check` from a source checkout to inspect packaging metadata, top-level README/LICENSE files, MIT license text, built artifact metadata in `dist/` when present, and README variants for unverified registry install claims. It is a pre-publish readiness check only; it does not publish anything or verify package-registry availability. Use `--json` for parseable automation output on stdout, and `--dist-dir PATH` to inspect a specific artifact directory.
+Use `bible-skill release check` from a source checkout to inspect packaging metadata, top-level README/LICENSE files, MIT license text, built artifact metadata in `dist/` when present, and README variants for unverified registry install claims. It is a pre-publish readiness check only; it does not publish anything or verify package-registry availability. Use `--json` for parseable automation output on stdout, and `--dist-dir PATH` to inspect a specific artifact directory. Maintainers should pair these commands with [RELEASE_CHECKLIST.md](RELEASE_CHECKLIST.md), which keeps source-checkout verification, built-artifact review, documentation truthfulness, and explicit no-registry-release status in one place.
 
 Run checks from a prepared development environment:
 
@@ -161,7 +161,7 @@ Bible Skill is tracked as a growth project with a cadence of 1 focused session/w
 
 Current roadmap focus:
 
-- Prepare a maintainer-facing release checklist that keeps source-checkout verification, built-artifact checks, and explicit no-registry-release status together until a real registry release is approved. Live provider schema diagnostics are complete.
+- The maintainer-facing release checklist is complete. The next focus is a documented smoke-test transcript for the most common local-first agent workflow using a tiny fixture cache, so maintainers can verify UX changes without network access.
 
 ## Contributing
 
