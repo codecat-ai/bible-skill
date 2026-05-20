@@ -17,6 +17,8 @@ _HTTP_ERROR_DETAIL_LIMIT = 240
 _HTTP_ERROR_MESSAGE_FIELDS = ("error", "message", "detail", "reason")
 _DEFAULT_HTTP_TIMEOUT = 30.0
 _RETRYABLE_HTTP_STATUS_CODES = {408, 429, 500, 502, 503, 504}
+_LIVE_TEXT_FIELDS = ("text", "content", "verse_text")
+_LIVE_VERSE_LIST_FIELDS = ("verses", "passages")
 
 
 class FreeUseBibleApiClient:
@@ -60,9 +62,10 @@ class BibleApiClient:
         url = f"{self.base_url}/{quote(reference)}?{query}"
         payload = _get_json(url, timeout=timeout, retries=retries)
         if not isinstance(payload, dict):
-            raise ProviderError("Live passage response has an unsupported shape.")
+            _raise_live_schema_error(["malformed payload: expected object"])
         if payload.get("error"):
             raise ProviderError(str(payload["error"]))
+        _validate_live_passage_schema(payload)
         return payload
 
 
@@ -88,6 +91,77 @@ def _get_json(url: str, *, timeout: float = _DEFAULT_HTTP_TIMEOUT, retries: int 
             raise ProviderError(f"Invalid JSON from {url}") from exc
 
     raise ProviderError(f"Network error while fetching {url}: retry attempts exhausted", retryable=True)
+
+
+def _validate_live_passage_schema(payload: dict[str, Any]) -> None:
+    issues: list[str] = []
+    body = payload
+    if "data" in payload:
+        data = payload["data"]
+        if not isinstance(data, dict):
+            issues.append("malformed `data`: expected object")
+            _raise_live_schema_error(issues)
+        body = data
+
+    if not _has_non_empty_value(body.get("reference")):
+        issues.append("missing `reference`: expected `reference` field")
+
+    verse_list_field = _live_verse_list_field(body)
+    if verse_list_field:
+        _validate_live_verse_list(body[verse_list_field], verse_list_field, issues)
+    elif not _has_text_value(body):
+        issues.append("missing text-bearing field: expected `text`, `content`, or `verse_text`")
+
+    if issues:
+        _raise_live_schema_error(issues)
+
+
+def _live_verse_list_field(body: dict[str, Any]) -> str:
+    for field in _LIVE_VERSE_LIST_FIELDS:
+        if field in body:
+            return field
+    return ""
+
+
+def _validate_live_verse_list(value: Any, field: str, issues: list[str]) -> None:
+    if not isinstance(value, list):
+        issues.append(f"malformed `{field}`: expected list")
+        return
+    if not value:
+        issues.append(f"malformed `{field}`: expected non-empty list")
+        return
+    for index, verse in enumerate(value):
+        path = f"`{field}[{index}]`"
+        if not isinstance(verse, dict):
+            issues.append(f"malformed verse entry at {path}: expected object")
+        elif not _has_text_value(verse):
+            issues.append(f"missing verse text at {path}: expected `text`, `content`, or `verse_text`")
+
+
+def _has_text_value(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    return any(field in value and _text_fragment_has_text(value[field]) for field in _LIVE_TEXT_FIELDS)
+
+
+def _text_fragment_has_text(value: Any) -> bool:
+    if isinstance(value, dict):
+        return _has_text_value(value)
+    if isinstance(value, list):
+        return any(_text_fragment_has_text(item) for item in value)
+    return _has_non_empty_value(value)
+
+
+def _has_non_empty_value(value: Any) -> bool:
+    return value is not None and bool(str(value).strip())
+
+
+def _raise_live_schema_error(issues: list[str]) -> None:
+    expected = (
+        "expected live passage fields: `reference`; either top-level `text`, `content`, or `verse_text`, "
+        "or a `verses`/`passages` list whose entries contain `text`, `content`, or `verse_text`"
+    )
+    raise ProviderError(f"unsupported live passage schema: {'; '.join(issues)}. {expected}")
 
 
 def _is_retryable_http_error(exc: HTTPError) -> bool:

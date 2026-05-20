@@ -71,6 +71,110 @@ def test_bible_api_passage_passes_timeout_and_retries_to_request(monkeypatch: py
     assert seen_options == [(4, 2)]
 
 
+@pytest.mark.parametrize(
+    ("payload", "expected_substrings"),
+    [
+        (
+            {"text": "Example text."},
+            ["unsupported live passage schema", "missing `reference`", "expected `reference`"],
+        ),
+        (
+            {"reference": "John 3:16"},
+            ["unsupported live passage schema", "missing text-bearing field", "`text`, `content`, or `verse_text`"],
+        ),
+        (
+            {"data": ["not", "an", "object"]},
+            ["unsupported live passage schema", "malformed `data`", "expected object"],
+        ),
+        (
+            {"reference": "John 3:16", "verses": {"text": "Example text."}},
+            ["unsupported live passage schema", "malformed `verses`", "expected list"],
+        ),
+        (
+            {"reference": "John 3:16", "passages": "not a list"},
+            ["unsupported live passage schema", "malformed `passages`", "expected list"],
+        ),
+        (
+            {"reference": "John 3:16", "verses": ["not an object"]},
+            ["unsupported live passage schema", "malformed verse entry at `verses[0]`", "expected object"],
+        ),
+        (
+            {"reference": "John 3:16", "verses": [{"reference": "John 3:16"}]},
+            [
+                "unsupported live passage schema",
+                "missing verse text at `verses[0]`",
+                "`text`, `content`, or `verse_text`",
+            ],
+        ),
+    ],
+)
+def test_bible_api_passage_rejects_unsupported_live_schema_with_diagnostics(
+    monkeypatch: pytest.MonkeyPatch, payload: dict[str, object], expected_substrings: list[str]
+) -> None:
+    def fake_get_json(url: str, *, timeout: float = 30, retries: int = 0) -> dict[str, object]:
+        return payload
+
+    monkeypatch.setattr(providers, "_get_json", fake_get_json)
+
+    with pytest.raises(ProviderError) as exc_info:
+        BibleApiClient("https://bible-api.example.invalid").passage("John 3:16")
+
+    message = str(exc_info.value)
+    for substring in expected_substrings:
+        assert substring in message
+    assert exc_info.value.retryable is False
+
+
+def test_bible_api_passage_rejects_non_object_live_schema_with_diagnostics(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_get_json(url: str, *, timeout: float = 30, retries: int = 0) -> list[str]:
+        return ["not", "an", "object"]
+
+    monkeypatch.setattr(providers, "_get_json", fake_get_json)
+
+    with pytest.raises(ProviderError) as exc_info:
+        BibleApiClient("https://bible-api.example.invalid").passage("John 3:16")
+
+    message = str(exc_info.value)
+    assert "unsupported live passage schema" in message
+    assert "malformed payload: expected object" in message
+    assert "expected live passage fields" in message
+    assert exc_info.value.retryable is False
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"reference": "John 3:16", "text": "Example text."},
+        {"reference": "John 3:16", "content": ["Example", {"text": "text."}]},
+        {"data": {"reference": "John 3:16", "verse_text": "Example text."}},
+        {
+            "reference": "John 3:16-17",
+            "verses": [
+                {"reference": "John 3:16", "content": ["Example", {"text": "text."}]},
+                {"reference": "John 3:17", "verse_text": [{"content": "Second text."}]},
+            ],
+        },
+        {
+            "data": {
+                "reference": "John 3:16",
+                "passages": [{"reference": "John 3:16", "text": "Example text."}],
+            }
+        },
+    ],
+)
+def test_bible_api_passage_accepts_supported_live_schema_shapes(
+    monkeypatch: pytest.MonkeyPatch, payload: dict[str, object]
+) -> None:
+    def fake_get_json(url: str, *, timeout: float = 30, retries: int = 0) -> dict[str, object]:
+        return payload
+
+    monkeypatch.setattr(providers, "_get_json", fake_get_json)
+
+    assert BibleApiClient("https://bible-api.example.invalid").passage("John 3:16") == payload
+
+
 def test_get_json_retries_transient_network_failure_then_succeeds(monkeypatch: pytest.MonkeyPatch) -> None:
     attempts = 0
 

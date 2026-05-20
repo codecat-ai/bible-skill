@@ -11,6 +11,10 @@ def _read(path: str) -> str:
 
 def test_english_readme_documents_source_checkout_offline_agent_setup() -> None:
     text = _read("README.md")
+    schema_diagnostic_text = (
+        "missing `reference`, malformed `data`, malformed `verses` or `passages`, malformed verse entries, "
+        "or missing verse text"
+    )
 
     assert "## Offline/local-only agent setup" in text
     assert "python -m venv .venv" in text
@@ -26,6 +30,7 @@ def test_english_readme_documents_source_checkout_offline_agent_setup() -> None:
     assert "Disable live fallback unless a task explicitly permits network use." in text
     assert "Do not use `pip install bible-skill`, `uvx bible-skill`, or similar registry commands" in text
     assert "suggests trying `--retries 2`" in text
+    assert schema_diagnostic_text in text
 
 
 def test_translated_readmes_document_matching_offline_agent_setup() -> None:
@@ -49,8 +54,10 @@ def test_translated_readmes_document_matching_offline_agent_setup() -> None:
     assert "将 Agent 指向生成的 `skills/bible-skill/SKILL.md`" in zh
     assert "除非任务明确允许网络使用，否则禁用实时后备。" in zh
     assert "只是发布前就绪检查" in zh
+    assert "缺少 `reference`、`data` 格式错误、`verses` 或 `passages` 格式错误、经文条目格式错误或缺少经文文本" in zh
 
     assert "## オフライン/ローカル専用 Agent セットアップ" in ja
     assert "生成した `skills/bible-skill/SKILL.md` を Agent に指定します" in ja
     assert "タスクが明示的にネットワーク使用を許可しない限り、ライブフォールバックを無効にします。" in ja
     assert "公開前の準備状況チェックだけ" in ja
+    assert "`reference` の欠落、`data` の不正、`verses` または `passages` の不正、節エントリの不正、節本文の欠落" in ja
