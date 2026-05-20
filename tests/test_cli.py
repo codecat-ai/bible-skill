@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from bible_skill.cli import _render_compare_csv, _render_live_csv, main
-from bible_skill.providers import BibleApiClient
+from bible_skill.providers import BibleApiClient, ProviderError
 from bible_skill.query import PassageResult, VerseResult
 from bible_skill.store import Store
 from tests.fixtures import tiny_translation
@@ -853,7 +853,89 @@ def test_cli_live_json_outputs_raw_provider_payload_for_data_wrapped_shape(
     code = main(["live", "John 3:16", "--json"])
 
     assert code == 0
-    assert json.loads(capsys.readouterr().out) == provider_payload
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == provider_payload
+    assert captured.err == ""
+
+
+@pytest.mark.parametrize("output_flag", ["--markdown", "--csv"])
+def test_cli_live_success_outputs_no_retry_guidance_on_stderr(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], output_flag: str
+) -> None:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
+        return {
+            "reference": "John 3:16",
+            "translation_id": "web",
+            "verses": [{"book_name": "John", "chapter": 3, "verse": 16, "text": "Example text."}],
+        }
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", output_flag])
+
+    captured = capsys.readouterr()
+    assert code == 0
+    assert captured.out
+    assert captured.err == ""
+
+
+def test_cli_live_transient_provider_failure_without_retries_suggests_bounded_retry(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
+        raise ProviderError("HTTP 503 while fetching https://provider.example.invalid/passage", retryable=True)
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--json"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert captured.out == ""
+    assert "Error: HTTP 503 while fetching https://provider.example.invalid/passage" in captured.err
+    assert "Hint: transient provider failures may succeed if you retry with `--retries 2`." in captured.err
+
+
+def test_cli_live_transient_provider_failure_with_retries_omits_retry_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
+        raise ProviderError("Network error while fetching https://provider.example.invalid/passage", retryable=True)
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--retries", "2"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert captured.out == ""
+    assert "Network error while fetching https://provider.example.invalid/passage" in captured.err
+    assert "--retries 2" not in captured.err
+
+
+def test_cli_live_non_retryable_provider_failure_omits_retry_hint(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    def fake_passage(
+        self: BibleApiClient, reference: str, translation: str = "web", *, timeout: float = 30, retries: int = 0
+    ) -> dict[str, object]:
+        raise ProviderError("Invalid JSON from https://provider.example.invalid/passage", retryable=False)
+
+    monkeypatch.setattr(BibleApiClient, "passage", fake_passage)
+
+    code = main(["live", "John 3:16", "--json"])
+
+    captured = capsys.readouterr()
+    assert code == 2
+    assert captured.out == ""
+    assert "Invalid JSON from https://provider.example.invalid/passage" in captured.err
+    assert "--retries 2" not in captured.err
 
 
 def test_render_live_csv_exports_one_row_per_usable_verse() -> None:

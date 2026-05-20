@@ -78,5 +78,7 @@ def render_skill(data_dir: str) -> str:
         "responses such as 404/no passage found are not retried.",
         "Live provider HTTP errors include the status, useful provider error text when available, and `Retry-After` "
         "backoff hints when returned.",
+        "When a live network or transient HTTP provider failure happens without requested retries, CLI stderr suggests "
+        "retrying with `--retries 2`; unsupported provider schema and invalid JSON failures do not get that hint.",
     ]
     return "\n".join(lines)

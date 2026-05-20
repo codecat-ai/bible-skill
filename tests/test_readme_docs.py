@@ -21,6 +21,7 @@ def test_english_readme_documents_source_checkout_offline_agent_setup() -> None:
     assert "Point the agent at the generated `skills/bible-skill/SKILL.md`" in text
     assert "Disable live fallback unless a task explicitly permits network use." in text
     assert "Do not use `pip install bible-skill`, `uvx bible-skill`, or similar registry commands" in text
+    assert "suggests trying `--retries 2`" in text
 
 
 def test_translated_readmes_document_matching_offline_agent_setup() -> None:
@@ -35,6 +36,7 @@ def test_translated_readmes_document_matching_offline_agent_setup() -> None:
         assert "bible-skill skill --data-dir ./data > skills/bible-skill/SKILL.md" in text
         assert "pip install bible-skill" in text
         assert "uvx bible-skill" in text
+        assert "--retries 2" in text
 
     assert "## 离线/仅本地 Agent 设置" in zh
     assert "将 Agent 指向生成的 `skills/bible-skill/SKILL.md`" in zh

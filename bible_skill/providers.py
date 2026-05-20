@@ -8,7 +8,9 @@ from urllib.request import Request, urlopen
 
 
 class ProviderError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, retryable: bool = False) -> None:
+        super().__init__(message)
+        self.retryable = retryable
 
 
 _HTTP_ERROR_DETAIL_LIMIT = 240
@@ -74,17 +76,18 @@ def _get_json(url: str, *, timeout: float = _DEFAULT_HTTP_TIMEOUT, retries: int 
                 charset = response.headers.get_content_charset() or "utf-8"
                 return json.loads(response.read().decode(charset))
         except HTTPError as exc:
-            if attempt < retries and _is_retryable_http_error(exc):
+            retryable = _is_retryable_http_error(exc)
+            if attempt < retries and retryable:
                 continue
-            raise ProviderError(_format_http_error(exc, url)) from exc
+            raise ProviderError(_format_http_error(exc, url), retryable=retryable) from exc
         except URLError as exc:
             if attempt < retries:
                 continue
-            raise ProviderError(f"Network error while fetching {url}: {exc.reason}") from exc
+            raise ProviderError(f"Network error while fetching {url}: {exc.reason}", retryable=True) from exc
         except json.JSONDecodeError as exc:
             raise ProviderError(f"Invalid JSON from {url}") from exc
 
-    raise ProviderError(f"Network error while fetching {url}: retry attempts exhausted")
+    raise ProviderError(f"Network error while fetching {url}: retry attempts exhausted", retryable=True)
 
 
 def _is_retryable_http_error(exc: HTTPError) -> bool:

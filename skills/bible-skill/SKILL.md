@@ -49,3 +49,4 @@ Run `bible-skill validate --data-dir DATA_DIR` before relying on cached local tr
 Live `--json` output is raw provider JSON. Live Markdown and CSV renderers also tolerate provider responses wrapped in a top-level `data` object, `verses` or `passages` lists, and verse text stored as `text`, `content`, `verse_text`, or nested mixed fragments.
 Use live `--timeout SECONDS` and `--retries COUNT` only for bounded provider calls; semantic provider responses such as 404/no passage found are not retried.
 Live provider HTTP errors include the status, useful provider error text when available, and `Retry-After` backoff hints when returned.
+When a live network or transient HTTP provider failure happens without requested retries, CLI stderr suggests retrying with `--retries 2`; unsupported provider schema and invalid JSON failures do not get that hint.
